@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/TestCompat.iml" filepath="$PROJECT_DIR$/.idea/modules/TestCompat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset.iml" group="apiSuperset" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_main.iml" group="apiSuperset" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_test.iml" group="apiSuperset" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1.iml" group="apiV1" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1_main.iml" group="apiV1" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1_test.iml" group="apiV1" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2.iml" group="apiV2" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2_main.iml" group="apiV2" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2_test.iml" group="apiV2" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData.iml" group="compileTimeData" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_main.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_main.iml" group="compileTimeData" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_test.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_test.iml" group="compileTimeData" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule.iml" group="ourModule" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule_main.iml" group="ourModule" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule_test.iml" group="ourModule" />
+    </modules>
+  </component>
+</project>

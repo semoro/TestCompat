@@ -1,0 +1,9 @@
+rootProject.name = 'TestCompat'
+//rootProject.buildFileName = 'build.gradle.kts'
+
+
+include 'apiV1',
+        'apiV2',
+        'apiSuperset',
+        'compileTimeData',
+        'ourModule'
