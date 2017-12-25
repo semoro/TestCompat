@@ -7,9 +7,14 @@ import org.gradle.api.tasks.TaskAction
 import org.objectweb.asm.*
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.ClassReader.SKIP_FRAMES
+import org.objectweb.asm.tree.AbstractInsnNode
+import org.objectweb.asm.tree.LdcInsnNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.VarInsnNode
 import java.io.File
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.*
 
 
 const val existsInDesc = "Lcompat/rt/ExistsIn;"
@@ -26,7 +31,7 @@ open class VerifyCompatibility : DefaultTask() {
     data class VersionData(val original: String) {
 
         fun allow(other: VersionData): Boolean {
-            return false
+            return original == other.original
         }
     }
 
@@ -119,8 +124,7 @@ open class VerifyCompatibility : DefaultTask() {
         }
     }
 
-    inner class ClassCompatCheckingVisitor() : ClassVisitor(Opcodes.ASM5) {
-
+    inner class ClassCompatCheckingVisitor(val deepMethodAnalysis: Boolean) : ClassVisitor(Opcodes.ASM5) {
 
 
         fun allowedType(type: Type, restriction: VersionData): Boolean {
@@ -151,41 +155,96 @@ open class VerifyCompatibility : DefaultTask() {
         }
 
         override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): MethodVisitor {
-
-            return object : MethodVisitor(Opcodes.ASM5) {
-
+            val methodNode = MethodNode(access, name, desc, signature, exceptions)
+            return object : MethodVisitor(Opcodes.ASM5, methodNode) {
                 var methodLevelVersion: VersionData? = null
                 override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
                     return doVisitAnnotation(desc) { methodLevelVersion = it }
                 }
 
+                val versionScopes = ArrayDeque<VersionData>()
 
-                override fun visitMethodInsn(opcode: Int, owner: String?, name: String?, desc: String?, itf: Boolean) {
+                var currentScope: VersionData? = null
+
+                fun traceUpToVersionConst(insnNode: AbstractInsnNode): String? {
+                    val prevNode = insnNode.previous
                     when {
-                        name == "enterVersionScope" && owner == "compat/rt/ScopesKt" -> {
-                            println()
+                        prevNode is LdcInsnNode -> return prevNode.cst as String
+                        prevNode is VarInsnNode && prevNode.opcode == Opcodes.ALOAD -> {
+                            var node = prevNode.previous
+                            while (node !is VarInsnNode || node.opcode != Opcodes.ASTORE || node.`var` != prevNode.`var`) {
+                                node = node.previous ?: return null
+                            }
+                            return traceUpToVersionConst(node)
                         }
-                        name == "leaveVersionScope" && owner == "compat/rt/ScopesKt" -> {
-
-                        }
-                        else -> {}
+                        else -> return traceUpToVersionConst(prevNode)
                     }
+                }
 
-                    super.visitMethodInsn(opcode, owner, name, desc, itf)
+                override fun visitCode() {
+                    currentScope = methodLevelVersion ?: classLevelVersion
+                    super.visitCode()
+                }
+
+                override fun visitMethodInsn(opcode: Int, mowner: String?, mname: String?, mdesc: String?, itf: Boolean) {
+                    super.visitMethodInsn(opcode, mowner, mname, mdesc, itf)
+
+                    if (mowner == "compat/rt/ScopesKt") {
+                        if (mname == "enterVersionScope") {
+                            val versionString = traceUpToVersionConst(methodNode.instructions.last) ?: return println("WARN: Unresolved scope")
+                            val vd = parseVersionData(versionString)
+                            versionScopes.add(vd)
+                            currentScope = vd
+                        } else if (mname == "leaveVersionScope") {
+                            versionScopes.remove()
+                            currentScope = if (versionScopes.isEmpty()) {
+                                methodLevelVersion ?: classLevelVersion
+                            } else {
+                                versionScopes.peek()
+                            }
+                        }
+                    } else {
+                        if (currentScope != null) {
+                            val calleeVersionInfo = methodToVersionInfo["$mowner.$mname $mdesc"] ?: return
+                            if (!currentScope!!.allow(calleeVersionInfo)) {
+                                println("Version restriction violation! MR `$mowner.$mname $mdesc` at `$className.$name $desc`")
+                            }
+                        }
+                    }
+                }
+
+                override fun visitFieldInsn(opcode: Int, fowner: String?, fname: String?, fdesc: String?) {
+                    super.visitFieldInsn(opcode, fowner, fname, fdesc)
+                    if (currentScope != null) {
+                        val fieldVersionInfo = fieldToVersionInfo["$fowner.$fname $fdesc"] ?: return
+                        if (!currentScope!!.allow(fieldVersionInfo)) {
+                            println("Version restriction violation! FR `$fowner.$fname $fdesc` at `$className.$name $desc`")
+                        }
+                    }
+                }
+
+                override fun visitTypeInsn(opcode: Int, typeName: String?) {
+                    super.visitTypeInsn(opcode, typeName)
+                    if (currentScope != null) {
+                        val type = Type.getObjectType(typeName)
+                        if (!allowedType(type, currentScope!!)) {
+                            println("Version restriction violation! TR `$typeName` at `$className.$name $desc`")
+                        }
+                    }
                 }
 
                 override fun visitEnd() {
+                    super.visitEnd()
+
                     val versionRestriction = methodLevelVersion ?: classLevelVersion
                     if (versionRestriction != null) {
                         val argTypes = Type.getArgumentTypes(desc) + Type.getReturnType(desc)
                         argTypes.forEach {
                             if (!allowedType(it, versionRestriction)) {
-                                println("Version restriction violation! at $className.$name $desc")
+                                println("Version restriction violation! TR `$it` at $className.$name $desc")
                             }
                         }
                     }
-
-                    super.visitEnd()
                 }
             }
         }
@@ -220,7 +279,9 @@ open class VerifyCompatibility : DefaultTask() {
     fun doCheck() {
 
         loadClasspathIndex()
-        println(classToVersionInfo)
+        println("Classes = $classToVersionInfo")
+        println("Methods = $methodToVersionInfo")
+        println("Fields = $fieldToVersionInfo")
 
         val checkpathClasses = classpathToClassFiles(checkpath).map {
             println("V $it")
@@ -230,7 +291,7 @@ open class VerifyCompatibility : DefaultTask() {
         checkpathClasses.map {
             ClassReader(it)
         }.forEach {
-            it.accept(ClassCompatCheckingVisitor(), SKIP_FRAMES)
+            it.accept(ClassCompatCheckingVisitor(true), SKIP_FRAMES)
         }
     }
 }
