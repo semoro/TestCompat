@@ -1,6 +1,7 @@
 package compat.process
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
@@ -20,6 +21,27 @@ import java.util.*
 const val existsInDesc = "Lcompat/rt/ExistsIn;"
 const val compatiblieWithDesc = "Lcompat/rt/CompatibleWith;"
 
+
+fun Type.formatForReport(): String {
+    return when (sort) {
+        Type.VOID -> "Unit"
+        Type.ARRAY -> "Array<" + elementType.formatForReport() + ">"
+        Type.INT -> "Int"
+        Type.BOOLEAN -> "Boolean"
+        Type.BYTE -> "Byte"
+        Type.CHAR -> "Char"
+        Type.DOUBLE -> "Double"
+        Type.FLOAT -> "Float"
+        Type.LONG -> "Long"
+        Type.SHORT -> "Short"
+        Type.OBJECT -> className
+        Type.METHOD -> "(" + argumentTypes.joinToString { it.formatForReport() } + "): " + returnType.formatForReport()
+        else -> error("Unsupported type kind")
+    }
+}
+
+private fun VerifyCompatibility.VersionData?.formatForReport(ann: String = "@ExistsIn") = "$ann(${this?.original ?: "*"})"
+
 open class VerifyCompatibility : DefaultTask() {
 
 
@@ -28,11 +50,17 @@ open class VerifyCompatibility : DefaultTask() {
     @InputFiles
     var checkpath: Iterable<File> = emptyList()
 
-    data class VersionData(val original: String) {
+    data class VersionData(val original: String)
 
-        fun allow(other: VersionData): Boolean {
-            return original == other.original
-        }
+
+    fun VersionData?.disallows(other: VersionData?): Boolean {
+        return !this.allows(other)
+    }
+
+    fun VersionData?.allows(other: VersionData?): Boolean {
+        if (other == null) return true
+        if (this == null) return false
+        return this.original == other.original
     }
 
     val versionParseCache = mutableMapOf<String, VersionData>()
@@ -113,7 +141,7 @@ open class VerifyCompatibility : DefaultTask() {
 
     fun loadClasspathIndex() {
         val classes = classpathToClassFiles(classpath).map {
-            println("R $it")
+            logger.debug("R $it")
             Files.newInputStream(it)
         }
 
@@ -124,18 +152,53 @@ open class VerifyCompatibility : DefaultTask() {
         }
     }
 
-    inner class ClassCompatCheckingVisitor(val deepMethodAnalysis: Boolean) : ClassVisitor(Opcodes.ASM5) {
-
-        fun allowedType(type: Type, restriction: VersionData?): Boolean {
-            val typeVersion = classToVersionInfo[type.className] ?: return true
-            return restriction?.allow(typeVersion) == true
+    data class SourceInfo(val at: String, val file: String, val line: String, val restriction: VersionData?) {
+        override fun toString(): String {
+            return "${restriction.formatForReport("@CompatibleWith")} '$at' ($file:$line)"
         }
+    }
+
+
+    sealed class ProblemDescriptor(val sourceData: SourceInfo) {
+
+        class TypeReferenceProblem(val refType: Type, val refVersionData: VersionData?, sourceData: SourceInfo) : ProblemDescriptor(sourceData) {
+            override fun toString(): String {
+                return "TR ${refVersionData.formatForReport()} '${refType.formatForReport()}' at $sourceData"
+            }
+        }
+
+        class MethodReferenceProblem(val refType: Type, val refMethod: String, val refMethodType: Type, val refVersionData: VersionData?, sourceData: SourceInfo) : ProblemDescriptor(sourceData) {
+            override fun toString(): String {
+                return "MR ${refVersionData.formatForReport()} '${refType.formatForReport()}.$refMethod${refMethodType.formatForReport()}' at $sourceData"
+            }
+        }
+
+        class FieldReferenceProblem(val refType: Type, val refField: String, val refFieldType: Type, val refVersionData: VersionData?, sourceData: SourceInfo) : ProblemDescriptor(sourceData) {
+            override fun toString(): String {
+                return "FR ${refVersionData.formatForReport()} '${refType.formatForReport()}.$refField: ${refFieldType.formatForReport()}' at $sourceData"
+            }
+        }
+    }
+
+    inner class ClassCompatCheckingVisitor(val deepMethodAnalysis: Boolean, val problemSink: (ProblemDescriptor) -> Unit) : ClassVisitor(Opcodes.ASM5) {
+
+//        fun allowedType(type: Type, restriction: VersionData?): Boolean {
+//            val typeVersion = classToVersionInfo[type.className] ?: return true
+//            return restriction?.allow(typeVersion) == true
+//        }
 
         lateinit var className: String
 
         override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
             className = name!!.replace('/', '.')
             super.visit(version, access, name, signature, superName, interfaces)
+        }
+
+        var source: String? = null
+
+        override fun visitSource(source: String?, debug: String?) {
+            super.visitSource(source, debug)
+            this.source = source
         }
 
         var classLevelVersion: VersionData? = null
@@ -185,6 +248,20 @@ open class VerifyCompatibility : DefaultTask() {
                     super.visitCode()
                 }
 
+                var firstLine = -1
+                var lineNumber = 0
+                override fun visitLineNumber(line: Int, start: Label?) {
+                    super.visitLineNumber(line, start)
+                    lineNumber = line
+                    if (firstLine == -1) {
+                        firstLine = line
+                    }
+                }
+
+                fun getSourceInfo(line: Int = lineNumber): SourceInfo {
+                    return SourceInfo("$className.$name${Type.getMethodType(desc).formatForReport()}", source!!, "$line", currentScope)
+                }
+
                 override fun visitMethodInsn(opcode: Int, mowner: String?, mname: String?, mdesc: String?, itf: Boolean) {
                     super.visitMethodInsn(opcode, mowner, mname, mdesc, itf)
 
@@ -204,25 +281,30 @@ open class VerifyCompatibility : DefaultTask() {
                         }
                     } else {
                         val calleeVersionInfo = methodToVersionInfo["$mowner.$mname $mdesc"] ?: return
-                        if (currentScope?.allow(calleeVersionInfo) != true) {
-                            println("Version restriction violation! MR `$mowner.$mname $mdesc` at `$className.$name $desc`")
+                        val calleeOwnerType = Type.getObjectType(mowner)
+                        val calleeMethodType = Type.getMethodType(mdesc)
+                        if (currentScope.disallows(calleeVersionInfo)) {
+                            problemSink(ProblemDescriptor.MethodReferenceProblem(calleeOwnerType, mname!!, calleeMethodType, calleeVersionInfo, getSourceInfo()))
                         }
                     }
                 }
 
                 override fun visitFieldInsn(opcode: Int, fowner: String?, fname: String?, fdesc: String?) {
                     super.visitFieldInsn(opcode, fowner, fname, fdesc)
-                    val fieldVersionInfo = fieldToVersionInfo["$fowner.$fname $fdesc"] ?: return
-                    if (currentScope?.allow(fieldVersionInfo) != true) {
-                        println("Version restriction violation! FR `$fowner.$fname $fdesc` at `$className.$name $desc`")
+                    val fieldVersionInfo = fieldToVersionInfo["$fowner.$fname $fdesc"]
+                    if (currentScope.disallows(fieldVersionInfo)) {
+                        val fieldOwnerType = Type.getType(fowner)
+                        val fieldType = Type.getType(fdesc)
+                        problemSink(ProblemDescriptor.FieldReferenceProblem(fieldOwnerType, fname!!, fieldType, fieldVersionInfo, getSourceInfo()))
                     }
                 }
 
                 override fun visitTypeInsn(opcode: Int, typeName: String?) {
                     super.visitTypeInsn(opcode, typeName)
                     val type = Type.getObjectType(typeName)
-                    if (!allowedType(type, currentScope)) {
-                        println("Version restriction violation! TR `$typeName` at `$className.$name $desc`")
+                    val restriction = classToVersionInfo[type.className]
+                    if (currentScope.disallows(restriction)) {
+                        problemSink(ProblemDescriptor.TypeReferenceProblem(type, restriction, getSourceInfo()))
                     }
                 }
 
@@ -232,8 +314,9 @@ open class VerifyCompatibility : DefaultTask() {
                     val versionRestriction = methodLevelVersion ?: classLevelVersion
                     val argTypes = Type.getArgumentTypes(desc) + Type.getReturnType(desc)
                     argTypes.forEach {
-                        if (!allowedType(it, versionRestriction)) {
-                            println("Version restriction violation! TR `$it` at `$className.$name $desc`")
+                        val restriction = classToVersionInfo[it.className]
+                        if (currentScope.disallows(restriction)) {
+                            problemSink(ProblemDescriptor.TypeReferenceProblem(it, restriction, getSourceInfo(firstLine)))
                         }
                     }
                 }
@@ -252,8 +335,9 @@ open class VerifyCompatibility : DefaultTask() {
                 override fun visitEnd() {
                     val versionRestriction = fieldLevelVersion ?: classLevelVersion
                     val returnType = Type.getType(desc)
-                    if (!allowedType(returnType, versionRestriction)) {
-                        println("Version restriction violation! TR `$returnType` at `$className.$name $desc`")
+                    val restriction = classToVersionInfo[returnType.className]
+                    if (versionRestriction.disallows(restriction)) {
+                        problemSink(ProblemDescriptor.TypeReferenceProblem(returnType, restriction, SourceInfo("$className.$name: ${returnType.formatForReport()}", source!!, "?", versionRestriction)))
                     }
                 }
             }
@@ -268,19 +352,25 @@ open class VerifyCompatibility : DefaultTask() {
     fun doCheck() {
 
         loadClasspathIndex()
-        println("Classes = $classToVersionInfo")
-        println("Methods = $methodToVersionInfo")
-        println("Fields = $fieldToVersionInfo")
+        logger.info("Classes = $classToVersionInfo")
+        logger.info("Methods = $methodToVersionInfo")
+        logger.info("Fields = $fieldToVersionInfo")
 
         val checkpathClasses = classpathToClassFiles(checkpath).map {
-            println("V $it")
+            logger.debug("V $it")
             Files.newInputStream(it)
         }
 
+        val problems = mutableListOf<ProblemDescriptor>()
         checkpathClasses.map {
             ClassReader(it)
         }.forEach {
-            it.accept(ClassCompatCheckingVisitor(true), SKIP_FRAMES)
+            it.accept(ClassCompatCheckingVisitor(true, { problems.add(it) }), SKIP_FRAMES)
+        }
+
+        problems.forEach { logger.error(it.toString()) }
+        if (problems.isNotEmpty()) {
+            throw GradleException("Compatibility verification failure. See log for more details")
         }
     }
 }
