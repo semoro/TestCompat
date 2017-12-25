@@ -233,7 +233,7 @@ open class VerifyCompatibility : DefaultTask() {
                     val argTypes = Type.getArgumentTypes(desc) + Type.getReturnType(desc)
                     argTypes.forEach {
                         if (!allowedType(it, versionRestriction)) {
-                            println("Version restriction violation! TR `$it` at $className.$name $desc")
+                            println("Version restriction violation! TR `$it` at `$className.$name $desc`")
                         }
                     }
                 }
@@ -253,7 +253,7 @@ open class VerifyCompatibility : DefaultTask() {
                     val versionRestriction = fieldLevelVersion ?: classLevelVersion
                     val returnType = Type.getType(desc)
                     if (!allowedType(returnType, versionRestriction)) {
-                        println("Version restriction violation! at $className.$name $desc")
+                        println("Version restriction violation! TR `$returnType` at `$className.$name $desc`")
                     }
                 }
             }
