@@ -21,4 +21,6 @@ class A {
     }
 
     fun callAbstract(impl: Abstract) {}
+
+    fun callRetDiff(impl: ReturnDiff) {}
 }

@@ -1,9 +1,6 @@
 package our
 
-import api.A
-import api.Abstract
-import api.V1
-import api.V2
+import api.*
 import compat.rt.CompatibleWith
 import compat.rt.forVersion
 
@@ -22,7 +19,19 @@ class ClassForV2 {
     }
 }
 
-class ImplCommonAbstract: Abstract() {
+class ReturnDiffImpl : ReturnDiff() {
+    override fun aInt(): Int {
+        println("Int one")
+        return 1
+    }
+
+    override fun aString(): String {
+        println("String one")
+        return "2"
+    }
+}
+
+class ImplCommonAbstract : Abstract() {
     @CompatibleWith("1")
     override fun g(x: Int) {
         println("g(x = $x)")
@@ -43,6 +52,8 @@ fun main(args: Array<String>) {
     val ourA = A()
 
     ourA.same()
+
+    ourA.callRetDiff(ReturnDiffImpl())
 
     forVersion("1") {
         ourA.v1()

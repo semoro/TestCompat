@@ -14,4 +14,8 @@ class A {
     fun callAbstract(impl: Abstract) {
         impl.g(1, 2)
     }
+
+    fun callRetDiff(impl: ReturnDiff) {
+        println("Ret ${impl.a()::class}")
+    }
 }
