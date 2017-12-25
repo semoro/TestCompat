@@ -182,11 +182,6 @@ open class VerifyCompatibility : DefaultTask() {
 
     inner class ClassCompatCheckingVisitor(val deepMethodAnalysis: Boolean, val problemSink: (ProblemDescriptor) -> Unit) : ClassVisitor(Opcodes.ASM5) {
 
-//        fun allowedType(type: Type, restriction: VersionData?): Boolean {
-//            val typeVersion = classToVersionInfo[type.className] ?: return true
-//            return restriction?.allow(typeVersion) == true
-//        }
-
         lateinit var className: String
 
         override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
