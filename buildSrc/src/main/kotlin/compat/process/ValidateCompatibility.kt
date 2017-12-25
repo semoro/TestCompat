@@ -126,10 +126,9 @@ open class VerifyCompatibility : DefaultTask() {
 
     inner class ClassCompatCheckingVisitor(val deepMethodAnalysis: Boolean) : ClassVisitor(Opcodes.ASM5) {
 
-
-        fun allowedType(type: Type, restriction: VersionData): Boolean {
+        fun allowedType(type: Type, restriction: VersionData?): Boolean {
             val typeVersion = classToVersionInfo[type.className] ?: return true
-            return restriction.allow(typeVersion)
+            return restriction?.allow(typeVersion) == true
         }
 
         lateinit var className: String
@@ -204,32 +203,26 @@ open class VerifyCompatibility : DefaultTask() {
                             }
                         }
                     } else {
-                        if (currentScope != null) {
-                            val calleeVersionInfo = methodToVersionInfo["$mowner.$mname $mdesc"] ?: return
-                            if (!currentScope!!.allow(calleeVersionInfo)) {
-                                println("Version restriction violation! MR `$mowner.$mname $mdesc` at `$className.$name $desc`")
-                            }
+                        val calleeVersionInfo = methodToVersionInfo["$mowner.$mname $mdesc"] ?: return
+                        if (currentScope?.allow(calleeVersionInfo) != true) {
+                            println("Version restriction violation! MR `$mowner.$mname $mdesc` at `$className.$name $desc`")
                         }
                     }
                 }
 
                 override fun visitFieldInsn(opcode: Int, fowner: String?, fname: String?, fdesc: String?) {
                     super.visitFieldInsn(opcode, fowner, fname, fdesc)
-                    if (currentScope != null) {
-                        val fieldVersionInfo = fieldToVersionInfo["$fowner.$fname $fdesc"] ?: return
-                        if (!currentScope!!.allow(fieldVersionInfo)) {
-                            println("Version restriction violation! FR `$fowner.$fname $fdesc` at `$className.$name $desc`")
-                        }
+                    val fieldVersionInfo = fieldToVersionInfo["$fowner.$fname $fdesc"] ?: return
+                    if (currentScope?.allow(fieldVersionInfo) != true) {
+                        println("Version restriction violation! FR `$fowner.$fname $fdesc` at `$className.$name $desc`")
                     }
                 }
 
                 override fun visitTypeInsn(opcode: Int, typeName: String?) {
                     super.visitTypeInsn(opcode, typeName)
-                    if (currentScope != null) {
-                        val type = Type.getObjectType(typeName)
-                        if (!allowedType(type, currentScope!!)) {
-                            println("Version restriction violation! TR `$typeName` at `$className.$name $desc`")
-                        }
+                    val type = Type.getObjectType(typeName)
+                    if (!allowedType(type, currentScope)) {
+                        println("Version restriction violation! TR `$typeName` at `$className.$name $desc`")
                     }
                 }
 
@@ -237,12 +230,10 @@ open class VerifyCompatibility : DefaultTask() {
                     super.visitEnd()
 
                     val versionRestriction = methodLevelVersion ?: classLevelVersion
-                    if (versionRestriction != null) {
-                        val argTypes = Type.getArgumentTypes(desc) + Type.getReturnType(desc)
-                        argTypes.forEach {
-                            if (!allowedType(it, versionRestriction)) {
-                                println("Version restriction violation! TR `$it` at $className.$name $desc")
-                            }
+                    val argTypes = Type.getArgumentTypes(desc) + Type.getReturnType(desc)
+                    argTypes.forEach {
+                        if (!allowedType(it, versionRestriction)) {
+                            println("Version restriction violation! TR `$it` at $className.$name $desc")
                         }
                     }
                 }
@@ -260,11 +251,9 @@ open class VerifyCompatibility : DefaultTask() {
 
                 override fun visitEnd() {
                     val versionRestriction = fieldLevelVersion ?: classLevelVersion
-                    if (versionRestriction != null) {
-                        val returnType = Type.getType(desc)
-                        if (!allowedType(returnType, versionRestriction)) {
-                            println("Version restriction violation! at $className.$name $desc")
-                        }
+                    val returnType = Type.getType(desc)
+                    if (!allowedType(returnType, versionRestriction)) {
+                        println("Version restriction violation! at $className.$name $desc")
                     }
                 }
             }
