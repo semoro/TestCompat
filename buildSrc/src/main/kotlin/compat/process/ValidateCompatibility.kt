@@ -139,8 +139,8 @@ open class VerifyCompatibility : DefaultTask() {
     }
 
 
-    fun loadClasspathIndex() {
-        val classes = classpathToClassFiles(classpath).map {
+    fun buildVersionIndex(classPaths: Sequence<Path>) {
+        val classes = classPaths.map {
             logger.debug("R $it")
             Files.newInputStream(it)
         }
@@ -346,19 +346,20 @@ open class VerifyCompatibility : DefaultTask() {
     @TaskAction
     fun doCheck() {
 
-        loadClasspathIndex()
+        buildVersionIndex(classpathToClassFiles(classpath))
         logger.info("Classes = $classToVersionInfo")
         logger.info("Methods = $methodToVersionInfo")
         logger.info("Fields = $fieldToVersionInfo")
 
-        val checkpathClasses = classpathToClassFiles(checkpath).map {
-            logger.debug("V $it")
-            Files.newInputStream(it)
-        }
-
+        val checkpathClasses = classpathToClassFiles(checkpath)
+        buildVersionIndex(checkpathClasses)
+        logger.info("Classes = $classToVersionInfo")
+        logger.info("Methods = $methodToVersionInfo")
+        logger.info("Fields = $fieldToVersionInfo")
+        
         val problems = mutableListOf<ProblemDescriptor>()
         checkpathClasses.map {
-            ClassReader(it)
+            ClassReader(Files.newInputStream(it))
         }.forEach {
             it.accept(ClassCompatCheckingVisitor(true, { problems.add(it) }), SKIP_FRAMES)
         }
