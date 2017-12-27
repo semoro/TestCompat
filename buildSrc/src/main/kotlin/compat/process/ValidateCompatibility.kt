@@ -117,28 +117,6 @@ open class VerifyCompatibility : DefaultTask() {
         }
     }
 
-    fun classpathToClassFiles(classpath: Iterable<File>): Sequence<Path> {
-        val (dirs, files) = classpath.partition { it.isDirectory }
-        val jars = files.filter { it.extension == "jar" }
-
-
-        val dirClasses = dirs.asSequence().map {
-            project.fileTree(it).include {
-                it.isDirectory || it.name.endsWith(".class")
-            } as FileTree
-        }.flatten().map { it.toPath() }
-
-
-        val jarClasses = jars.map { it.toPath() }.asSequence().map {
-            FileSystems.newFileSystem(it, null).rootDirectories
-        }.flatten().map {
-            filteredFiles(it) { it.fileName.toString().endsWith("class") }
-        }.flatten()
-
-        return dirClasses + jarClasses
-    }
-
-
     fun buildVersionIndex(classPaths: Sequence<Path>) {
         val classes = classPaths.map {
             logger.debug("R $it")
@@ -346,12 +324,12 @@ open class VerifyCompatibility : DefaultTask() {
     @TaskAction
     fun doCheck() {
 
-        buildVersionIndex(classpathToClassFiles(classpath))
+        buildVersionIndex(project.classpathToClassFiles(classpath))
         logger.info("Classes = $classToVersionInfo")
         logger.info("Methods = $methodToVersionInfo")
         logger.info("Fields = $fieldToVersionInfo")
 
-        val checkpathClasses = classpathToClassFiles(checkpath)
+        val checkpathClasses = project.classpathToClassFiles(checkpath)
         buildVersionIndex(checkpathClasses)
         logger.info("Classes = $classToVersionInfo")
         logger.info("Methods = $methodToVersionInfo")

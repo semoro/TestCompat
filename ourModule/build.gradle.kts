@@ -10,6 +10,7 @@ val runtimeV2 by configurations.creating {
 
 val compileOnly by configurations
 dependencies {
+    compile(project(":compileTimeData"))
     compileOnly(project(":apiSuperset"))
     runtimeV1(project(":apiV1"))
     runtimeV2(project(":apiV2"))
