@@ -36,9 +36,8 @@ class SSGClass(
         return buildString {
             append(version.forDisplay())
             appendln("${acc.toString(16)} class $fqName {")
-            methods.values.joinTo(this, separator = "\n")
-            appendln()
-            fields.values.joinTo(this, separator = "\n")
+            methods.values.joinTo(this, separator = "\n\t", prefix = "\t")
+            fields.values.joinTo(this, separator = "\n\t", prefix = "\n\t")
             appendln()
             appendln("}")
         }
