@@ -3,7 +3,7 @@ package compat.process.ssg
 import compat.process.Version
 import org.objectweb.asm.Opcodes.*
 
-private const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC
+private const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC or ACC_PROTECTED
 private const val KIND_MASK = ACC_INTERFACE or ACC_ABSTRACT or ACC_ANNOTATION or ACC_ENUM
 
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
@@ -67,6 +67,16 @@ class SSGMerger(val generator: SupersetGenerator) {
         mMergeFailure++
     }
 
+    fun mergeClassesInternals(a: SSGClass, b: SSGClass) {
+        a.version = mergeVersions(a.version, b.version)
+        b.methodsBySignature.values.forEach {
+            appendMethod(a, it, b)
+        }
+        b.fieldsBySignature.values.forEach {
+            appendField(a, it, b)
+        }
+    }
+
     fun mergeClasses(a: SSGClass, b: SSGClass) {
         if (b.version in a.version) {
             generator.logger.info("Duplicated class ${a.fqName}")
@@ -74,16 +84,19 @@ class SSGMerger(val generator: SupersetGenerator) {
         }
 
         if (a.sameVisibility(b) && a.sameKind(b)) {
+            mergeClassesInternals(a, b)
+            mergeSuccess++
+            return
+        } else if (a.sameKind(b)) {
+            val aVis = a.access.decodeVisibility()
+            val bVis = b.access.decodeVisibility()
 
+            a.alternativeVisibility()[aVis] = a.version
+            b.alternativeVisibility()[bVis] = b.version
 
-            a.version = mergeVersions(a.version, b.version)
-            b.methodsBySignature.values.forEach {
-                appendMethod(a, it, b)
-            }
-            b.fieldsBySignature.values.forEach {
-                appendField(a, it, b)
-            }
+            a.access = a.access and (VISIBILITY_MASK.inv()) or ACC_PUBLIC
 
+            mergeClassesInternals(a, b)
             mergeSuccess++
             return
         }
@@ -104,3 +117,13 @@ class SSGMerger(val generator: SupersetGenerator) {
                 "Methods s: $mMergeSuccess, f: $mMergeFailure, t: ${mMergeSuccess + mMergeFailure}\n"
     }
 }
+
+fun Int.decodeVisibility(): Visibility {
+    return when {
+        hasFlag(ACC_PUBLIC) -> Visibility.PUBLIC
+        hasFlag(ACC_PROTECTED) -> Visibility.PROTECTED
+        !hasFlag(ACC_PRIVATE) -> Visibility.PACKAGE_PRIVATE
+        else -> Visibility.PUBLIC
+    }
+}
+

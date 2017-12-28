@@ -10,15 +10,17 @@ class SSGClass(
         var fqName: String,
         var superType: String?,
         var interfaces: Array<String>?,
-        var version: Version?
-) : SSGNode<SSGClass> {
+        override var version: Version?
+) : SSGNode<SSGClass>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
+
+    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
+
 
     val methodsBySignature = mutableMapOf<String, SSGMethod>()
     val fieldsBySignature = mutableMapOf<String, SSGField>()
 
     fun addField(node: SSGField) {
         assert(node.fqd() !in fieldsBySignature)
-
         fieldsBySignature[node.fqd()] = node
     }
 
@@ -65,8 +67,10 @@ class SSGField(
         var desc: String,
         var signature: String?,
         var value: Any?,
-        var version: Version?
-) : SSGNode<SSGField> {
+        override var version: Version?
+) : SSGNode<SSGField>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
+
+    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
     fun fqd(): String = name + desc
 
@@ -98,15 +102,20 @@ private fun Version?.forDisplay(): String {
     return "@ExistsIn(${this.asLiteralValue()}) "
 }
 
+enum class Visibility {
+    PUBLIC, PROTECTED, PACKAGE_PRIVATE
+}
+
 class SSGMethod(
         var access: Int,
         var name: String,
         var desc: String,
         var signature: String?,
         var exceptions: Array<String>?,
-        var version: Version?
-) : SSGNode<SSGMethod> {
+        override var version: Version?
+) : SSGNode<SSGMethod>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
 
+    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
     fun fqd(): String {
         return name + desc
@@ -134,4 +143,14 @@ class SSGMethod(
 }
 
 interface SSGNode<T : SSGNode<T>> {
+}
+
+interface SSGVersionContainer {
+    var version: Version?
+}
+
+interface SSGAlternativeVisibilityContainer {
+    var alternativeVisibility: MutableMap<Visibility, Version?>?
+
+    fun alternativeVisibility() = (alternativeVisibility ?: mutableMapOf()).also { alternativeVisibility = it }
 }

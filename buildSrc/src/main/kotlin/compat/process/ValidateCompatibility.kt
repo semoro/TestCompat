@@ -20,6 +20,8 @@ import java.util.*
 
 const val existsInDesc = "Lcompat/rt/ExistsIn;"
 const val compatiblieWithDesc = "Lcompat/rt/CompatibleWith;"
+const val altVisDesc = "Lcompat/rt/AlternativeVisibility;"
+const val visEnumDesc = "Lcompat/rt/Visibility;"
 
 
 fun Type.formatForReport(): String {
