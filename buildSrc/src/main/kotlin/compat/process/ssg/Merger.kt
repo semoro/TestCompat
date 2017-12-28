@@ -46,8 +46,8 @@ class SSGMerger(val generator: SupersetGenerator) {
         }
 
         generator.logger.error("Couldn't merge fields")
-        generator.logger.error("target: $fieldToMergeWith")
-        generator.logger.error("source: $sourceField")
+        generator.logger.error("target: ${to.fqName}.$fieldToMergeWith")
+        generator.logger.error("source: ${source.fqName}.$sourceField")
         fMergeFailure++
     }
 
@@ -62,8 +62,8 @@ class SSGMerger(val generator: SupersetGenerator) {
             return
         }
         generator.logger.error("Couldn't merge methods")
-        generator.logger.error("target: $methodToMergeWith")
-        generator.logger.error("source: $sourceMethod")
+        generator.logger.error("target: ${to.fqName}.$methodToMergeWith")
+        generator.logger.error("source: ${source.fqName}.$sourceMethod")
         mMergeFailure++
     }
 
@@ -91,8 +91,10 @@ class SSGMerger(val generator: SupersetGenerator) {
             val aVis = a.access.decodeVisibility()
             val bVis = b.access.decodeVisibility()
 
-            a.alternativeVisibility()[aVis] = a.version
-            b.alternativeVisibility()[bVis] = b.version
+
+            // += workaround KT-21724
+            a.alternativeVisibility().let { it[aVis] = it[aVis] + a.version }
+            a.alternativeVisibility().let { it[bVis] = it[bVis] + b.version }
 
             a.access = a.access and (VISIBILITY_MASK.inv()) or ACC_PUBLIC
 
