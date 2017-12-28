@@ -1,5 +1,6 @@
 import compat.process.GenSuperset
 import compat.process.Version
+import compat.process.VersionHandler
 
 plugins {
     `java`
@@ -20,14 +21,25 @@ dependencies {
     apiV2(project(":apiV2"))
 }
 
+object MyVerHandler: VersionHandler {
+    override fun plus(t: Version?, other: Version?): Version? {
+        if (t == null) return other
+        if (other == null) return t
+        return MyVer((t as MyVer).versionStrings + (other as MyVer).versionStrings)
+    }
+
+    override fun contains(t: Version?, other: Version?): Boolean {
+        if (t == null) return true
+        if (other == null) return false
+        t as MyVer
+        other as MyVer
+        return other.versionStrings.all { it in t.versionStrings }
+    }
+}
+
 class MyVer(val versionStrings: List<String>) : Version {
     override fun asLiteralValue(): String {
         return versionStrings.joinToString()
-    }
-
-    override fun plus(other: Version?): Version {
-        if(other == null) return this
-        return MyVer(versionStrings + (other as MyVer).versionStrings)
     }
 
 
@@ -51,6 +63,7 @@ tasks {
     val genSuperset by creating(GenSuperset::class) {
         input += root(apiV1, MyVer(listOf("1")))
         input += root(apiV2, MyVer(listOf("2")))
+        versionHandler = MyVerHandler
         dependsOn(apiV1, apiV2)
     }
 }
