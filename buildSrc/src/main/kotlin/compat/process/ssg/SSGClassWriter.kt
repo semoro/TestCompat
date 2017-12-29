@@ -6,7 +6,6 @@ import compat.process.visEnumDesc
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
-import kotlin.reflect.KProperty0
 
 class SSGClassWriter {
 
@@ -36,9 +35,17 @@ class SSGClassWriter {
         }
     }
 
+    private fun ClassVisitor.writeOuterClassInfo(info: OuterClassInfo?) {
+        if (info == null) return
+        visitOuterClass(info.owner, info.methodName, info.methodDesc)
+    }
+
     fun write(node: SSGClass, classWriter: ClassVisitor) {
 
         classWriter.visit(Opcodes.V1_8, node.access, node.fqName, null, node.superType, node.interfaces)
+
+        classWriter.writeOuterClassInfo(node.ownerInfo)
+
         node.writeVersion { classWriter.visitAnnotation(existsInDesc, true) }
         node.writeAlternativeVisibility { classWriter.visitAnnotation(altVisDesc, true) }
 
@@ -51,6 +58,12 @@ class SSGClassWriter {
         node.methodsBySignature.values.forEach {
             classWriter.visitMethod(Opcodes.ACC_PUBLIC, it.name, it.desc, it.signature, it.exceptions)?.apply {
                 it.writeVersion { visitAnnotation(existsInDesc, true) }
+            }
+        }
+
+        node.innerClassesBySignature?.let {
+            it.values.forEach {
+                classWriter.visitInnerClass(it.name, it.outerName, it.innerName, it.access)
             }
         }
 

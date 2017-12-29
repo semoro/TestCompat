@@ -13,8 +13,12 @@ class SSGClass(
         override var version: Version?
 ) : SSGNode<SSGClass>, SSGVersionContainer, SSGAlternativeVisibilityContainer, SSGAccess {
 
+    var isKotlin = false
+
     override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
+    var innerClassesBySignature: MutableMap<String, SSGInnerClassRef>? = null
+    var ownerInfo: OuterClassInfo? = null
 
     val methodsBySignature = mutableMapOf<String, SSGMethod>()
     val fieldsBySignature = mutableMapOf<String, SSGField>()
@@ -126,8 +130,9 @@ class SSGMethod(
             append(version.forDisplay())
 
             appendVisibility(access)
-
-            if (!(access hasFlag ACC_FINAL)) {
+            if (access hasFlag ACC_ABSTRACT) {
+                append("abstract ")
+            } else if (!(access hasFlag ACC_FINAL)) {
                 append("open ")
             }
             if (access hasFlag ACC_STATIC) {
@@ -149,7 +154,7 @@ interface SSGVersionContainer {
     var version: Version?
 }
 
-interface SSGAlternativeVisibilityContainer: SSGAccess {
+interface SSGAlternativeVisibilityContainer : SSGAccess {
     var alternativeVisibility: MutableMap<Visibility, Version?>?
 
     fun alternativeVisibility() = (alternativeVisibility ?: mutableMapOf()).also { alternativeVisibility = it }
@@ -158,3 +163,12 @@ interface SSGAlternativeVisibilityContainer: SSGAccess {
 interface SSGAccess {
     var access: Int
 }
+
+data class OuterClassInfo(var owner: String, var methodName: String?, var methodDesc: String?)
+
+data class SSGInnerClassRef(
+        override var access: Int,
+        var name: String,
+        var outerName: String?,
+        var innerName: String?
+): SSGAccess

@@ -23,6 +23,7 @@ class SSGMerger(val generator: SupersetGenerator) {
 
     var mergeSuccess = 0
     var mergeFailure = 0
+    var kMergeFailure = 0
 
     var mMergeFailure = 0
     var mMergeSuccess = 0
@@ -53,18 +54,24 @@ class SSGMerger(val generator: SupersetGenerator) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
 
-        if (targetMethod.sameKind(sourceMethod)) {
-            mergeVisibilities(targetMethod, sourceMethod)
+        fun reportMergeFailure() {
+            generator.logger.error("Couldn't merge methods")
+            generator.logger.error("target: ${to.fqName}.$targetMethod")
+            generator.logger.error("source: ${source.fqName}.$sourceMethod")
+            mMergeFailure++
+        }
 
-            targetMethod.version = mergeVersions(targetMethod.version, sourceMethod.version)
-
-            mMergeSuccess++
+        if (!targetMethod.sameKind(sourceMethod)) {
+            reportMergeFailure()
             return
         }
-        generator.logger.error("Couldn't merge methods")
-        generator.logger.error("target: ${to.fqName}.$targetMethod")
-        generator.logger.error("source: ${source.fqName}.$sourceMethod")
-        mMergeFailure++
+
+
+        mergeVisibilities(targetMethod, sourceMethod)
+
+        targetMethod.version = mergeVersions(targetMethod.version, sourceMethod.version)
+
+        mMergeSuccess++
     }
 
     fun mergeClassesInternals(a: SSGClass, b: SSGClass) {
@@ -97,25 +104,45 @@ class SSGMerger(val generator: SupersetGenerator) {
             return
         }
 
-        if (a.sameKind(b)) {
-            mergeVisibilities(a, b)
-            mergeClassesInternals(a, b)
-            mergeSuccess++
+        fun reportMergeFailure(message: String) {
+            generator.logger.error("""
+                |$message
+                |Failed to merge:
+                |$a
+                |with:
+                |$b
+                |
+                |ASM:
+                |${a.asmText()}
+                |VS
+                |${b.asmText()}
+                |""".trimMargin())
+
+        }
+        if (a.isKotlin != b.isKotlin) {
+            reportMergeFailure("Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
+            kMergeFailure++
             return
         }
-
-        generator.logger.error("Failed to merge:\n$a \nwith:\n $b")
-        generator.logger.error("ASM:")
-        generator.logger.error(a.asmText())
-        generator.logger.error("VS")
-        generator.logger.error(b.asmText())
-        mergeFailure++
+        if (!a.sameKind(b)) {
+            reportMergeFailure("Kind mismatch")
+            mergeFailure++
+            return
+        }
+        if (a.ownerInfo != b.ownerInfo) {
+            reportMergeFailure("Owner mismatch ${a.ownerInfo} != ${b.ownerInfo}")
+            mergeFailure++
+            return
+        }
+        mergeVisibilities(a, b)
+        mergeClassesInternals(a, b)
+        mergeSuccess++
     }
 
     fun mergeVersions(a: Version?, b: Version?) = a + b
 
     fun formatStatistics(): String {
-        return "Classes s: $mergeSuccess, f: $mergeFailure, t: ${mergeSuccess + mergeFailure}\n" +
+        return "Classes s: $mergeSuccess, f: $mergeFailure, kf: $kMergeFailure, t: ${mergeSuccess + mergeFailure + kMergeFailure}\n" +
                 "Fields s: $fMergeSuccess, f: $fMergeFailure, t: ${fMergeSuccess + fMergeFailure}\n" +
                 "Methods s: $mMergeSuccess, f: $mMergeFailure, t: ${mMergeSuccess + mMergeFailure}\n"
     }
@@ -133,7 +160,7 @@ var SSGAccess.visibility: Visibility
         }
     }
     set(value) {
-        val flag = when(value) {
+        val flag = when (value) {
             Visibility.PUBLIC -> ACC_PUBLIC
             Visibility.PROTECTED -> ACC_PROTECTED
             Visibility.PACKAGE_PRIVATE -> 0
