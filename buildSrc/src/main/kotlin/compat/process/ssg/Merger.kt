@@ -9,12 +9,8 @@ private const val KIND_MASK = ACC_INTERFACE or ACC_ABSTRACT or ACC_ANNOTATION or
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
 
 
-fun SSGClass.sameVisibility(other: SSGClass): Boolean = access.sameMasked(other.access, VISIBILITY_MASK)
-fun SSGClass.sameKind(other: SSGClass): Boolean = access.sameMasked(other.access, KIND_MASK)
-fun SSGMethod.sameVisibility(other: SSGMethod): Boolean = access.sameMasked(other.access, VISIBILITY_MASK)
-fun SSGMethod.sameKind(other: SSGMethod): Boolean = access.sameMasked(other.access, KIND_MASK)
-fun SSGField.sameVisibility(other: SSGField): Boolean = access.sameMasked(other.access, VISIBILITY_MASK)
-fun SSGField.sameKind(other: SSGField): Boolean = access.sameMasked(other.access, KIND_MASK)
+fun SSGAccess.sameVisibility(other: SSGAccess): Boolean = access.sameMasked(other.access, VISIBILITY_MASK)
+fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(other.access, KIND_MASK)
 
 class SSGMerger(val generator: SupersetGenerator) {
 
@@ -36,33 +32,37 @@ class SSGMerger(val generator: SupersetGenerator) {
 
     fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
         val fqd = sourceField.fqd()
-        val fieldToMergeWith = to.fieldsBySignature[fqd] ?: return to.addField(sourceField)
+        val targetField = to.fieldsBySignature[fqd] ?: return to.addField(sourceField)
 
-        if (fieldToMergeWith.sameKind(sourceField) && fieldToMergeWith.sameVisibility(sourceField)) {
-            fieldToMergeWith.version = mergeVersions(fieldToMergeWith.version, sourceField.version)
+        if (targetField.sameKind(sourceField)) {
+            mergeVisibilities(targetField, sourceField)
+
+            targetField.version = mergeVersions(targetField.version, sourceField.version)
 
             fMergeSuccess++
             return
         }
 
         generator.logger.error("Couldn't merge fields")
-        generator.logger.error("target: ${to.fqName}.$fieldToMergeWith")
+        generator.logger.error("target: ${to.fqName}.$targetField")
         generator.logger.error("source: ${source.fqName}.$sourceField")
         fMergeFailure++
     }
 
     fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
         val fqd = sourceMethod.fqd()
-        val methodToMergeWith = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
+        val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
 
-        if (methodToMergeWith.sameKind(sourceMethod) && methodToMergeWith.sameVisibility(sourceMethod)) {
-            methodToMergeWith.version = mergeVersions(methodToMergeWith.version, sourceMethod.version)
+        if (targetMethod.sameKind(sourceMethod)) {
+            mergeVisibilities(targetMethod, sourceMethod)
+
+            targetMethod.version = mergeVersions(targetMethod.version, sourceMethod.version)
 
             mMergeSuccess++
             return
         }
         generator.logger.error("Couldn't merge methods")
-        generator.logger.error("target: ${to.fqName}.$methodToMergeWith")
+        generator.logger.error("target: ${to.fqName}.$targetMethod")
         generator.logger.error("source: ${source.fqName}.$sourceMethod")
         mMergeFailure++
     }
@@ -77,27 +77,30 @@ class SSGMerger(val generator: SupersetGenerator) {
         }
     }
 
+    fun <T> mergeVisibilities(into: T, from: T)
+            where T : SSGAlternativeVisibilityContainer, T : SSGVersionContainer {
+        if (!into.sameVisibility(from)) {
+            val aVis = into.access.decodeVisibility()
+            val bVis = from.access.decodeVisibility()
+
+
+            // += workaround KT-21724
+            into.alternativeVisibility().let { it[aVis] = it[aVis] + into.version }
+            into.alternativeVisibility().let { it[bVis] = it[bVis] + from.version }
+
+            into.access = into.access and (VISIBILITY_MASK.inv()) or ACC_PUBLIC
+
+        }
+    }
+
     fun mergeClasses(a: SSGClass, b: SSGClass) {
         if (b.version in a.version) {
             generator.logger.info("Duplicated class ${a.fqName}")
             return
         }
 
-        if (a.sameVisibility(b) && a.sameKind(b)) {
-            mergeClassesInternals(a, b)
-            mergeSuccess++
-            return
-        } else if (a.sameKind(b)) {
-            val aVis = a.access.decodeVisibility()
-            val bVis = b.access.decodeVisibility()
-
-
-            // += workaround KT-21724
-            a.alternativeVisibility().let { it[aVis] = it[aVis] + a.version }
-            a.alternativeVisibility().let { it[bVis] = it[bVis] + b.version }
-
-            a.access = a.access and (VISIBILITY_MASK.inv()) or ACC_PUBLIC
-
+        if (a.sameKind(b)) {
+            mergeVisibilities(a, b)
             mergeClassesInternals(a, b)
             mergeSuccess++
             return

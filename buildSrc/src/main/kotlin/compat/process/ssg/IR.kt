@@ -6,12 +6,12 @@ import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type
 
 class SSGClass(
-        var access: Int,
+        override var access: Int,
         var fqName: String,
         var superType: String?,
         var interfaces: Array<String>?,
         override var version: Version?
-) : SSGNode<SSGClass>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
+) : SSGNode<SSGClass>, SSGVersionContainer, SSGAlternativeVisibilityContainer, SSGAccess {
 
     override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
@@ -62,13 +62,13 @@ class SSGClass(
 }
 
 class SSGField(
-        var access: Int,
+        override var access: Int,
         var name: String,
         var desc: String,
         var signature: String?,
         var value: Any?,
         override var version: Version?
-) : SSGNode<SSGField>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
+) : SSGNode<SSGField>, SSGVersionContainer, SSGAlternativeVisibilityContainer, SSGAccess {
 
     override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
@@ -107,13 +107,13 @@ enum class Visibility {
 }
 
 class SSGMethod(
-        var access: Int,
+        override var access: Int,
         var name: String,
         var desc: String,
         var signature: String?,
         var exceptions: Array<String>?,
         override var version: Version?
-) : SSGNode<SSGMethod>, SSGVersionContainer, SSGAlternativeVisibilityContainer {
+) : SSGNode<SSGMethod>, SSGVersionContainer, SSGAlternativeVisibilityContainer, SSGAccess {
 
     override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
 
@@ -149,8 +149,12 @@ interface SSGVersionContainer {
     var version: Version?
 }
 
-interface SSGAlternativeVisibilityContainer {
+interface SSGAlternativeVisibilityContainer: SSGAccess {
     var alternativeVisibility: MutableMap<Visibility, Version?>?
 
     fun alternativeVisibility() = (alternativeVisibility ?: mutableMapOf()).also { alternativeVisibility = it }
+}
+
+interface SSGAccess {
+    var access: Int
 }
