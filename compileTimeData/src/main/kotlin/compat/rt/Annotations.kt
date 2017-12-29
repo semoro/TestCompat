@@ -6,7 +6,7 @@ annotation class CompatibleWith(val version: String)
 
 
 enum class Visibility {
-    PUBLIC, PROTECTED, PACKAGE_PRIVATE
+    PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE
 }
 
 annotation class AlternativeVisibility(val version: Array<String>, val visibility: Array<Visibility>)

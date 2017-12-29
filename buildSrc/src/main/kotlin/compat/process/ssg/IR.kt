@@ -103,7 +103,7 @@ private fun Version?.forDisplay(): String {
 }
 
 enum class Visibility {
-    PUBLIC, PROTECTED, PACKAGE_PRIVATE
+    PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE
 }
 
 class SSGMethod(

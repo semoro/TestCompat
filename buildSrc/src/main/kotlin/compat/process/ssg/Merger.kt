@@ -80,16 +80,14 @@ class SSGMerger(val generator: SupersetGenerator) {
     fun <T> mergeVisibilities(into: T, from: T)
             where T : SSGAlternativeVisibilityContainer, T : SSGVersionContainer {
         if (!into.sameVisibility(from)) {
-            val aVis = into.access.decodeVisibility()
-            val bVis = from.access.decodeVisibility()
-
+            val intoVis = into.visibility
+            val fromVis = from.visibility
 
             // += workaround KT-21724
-            into.alternativeVisibility().let { it[aVis] = it[aVis] + into.version }
-            into.alternativeVisibility().let { it[bVis] = it[bVis] + from.version }
+            into.alternativeVisibility().let { it[intoVis] = it[intoVis] + into.version }
+            into.alternativeVisibility().let { it[fromVis] = it[fromVis] + from.version }
 
-            into.access = into.access and (VISIBILITY_MASK.inv()) or ACC_PUBLIC
-
+            into.visibility = Visibility.PUBLIC
         }
     }
 
@@ -106,7 +104,7 @@ class SSGMerger(val generator: SupersetGenerator) {
             return
         }
 
-        generator.logger.error("Failed to merge: $a \n with $b")
+        generator.logger.error("Failed to merge:\n$a \nwith:\n $b")
         generator.logger.error("ASM:")
         generator.logger.error(a.asmText())
         generator.logger.error("VS")
@@ -123,12 +121,24 @@ class SSGMerger(val generator: SupersetGenerator) {
     }
 }
 
-fun Int.decodeVisibility(): Visibility {
-    return when {
-        hasFlag(ACC_PUBLIC) -> Visibility.PUBLIC
-        hasFlag(ACC_PROTECTED) -> Visibility.PROTECTED
-        !hasFlag(ACC_PRIVATE) -> Visibility.PACKAGE_PRIVATE
-        else -> Visibility.PUBLIC
+var SSGAccess.visibility: Visibility
+    get() {
+        return with(access) {
+            when {
+                hasFlag(ACC_PUBLIC) -> Visibility.PUBLIC
+                hasFlag(ACC_PROTECTED) -> Visibility.PROTECTED
+                hasFlag(ACC_PRIVATE) -> Visibility.PRIVATE
+                else -> Visibility.PACKAGE_PRIVATE
+            }
+        }
     }
-}
+    set(value) {
+        val flag = when(value) {
+            Visibility.PUBLIC -> ACC_PUBLIC
+            Visibility.PROTECTED -> ACC_PROTECTED
+            Visibility.PACKAGE_PRIVATE -> 0
+            Visibility.PRIVATE -> ACC_PRIVATE
+        }
+        access = access and (VISIBILITY_MASK.inv()) or flag
+    }
 
