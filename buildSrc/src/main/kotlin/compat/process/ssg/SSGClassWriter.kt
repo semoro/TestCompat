@@ -3,9 +3,8 @@ package compat.process.ssg
 import compat.process.altVisDesc
 import compat.process.existsInDesc
 import compat.process.visEnumDesc
-import org.objectweb.asm.AnnotationVisitor
-import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.Opcodes
+import org.objectweb.asm.*
+import org.objectweb.asm.Opcodes.ACC_ABSTRACT
 
 class SSGClassWriter {
 
@@ -40,9 +39,19 @@ class SSGClassWriter {
         visitOuterClass(info.owner, info.methodName, info.methodDesc)
     }
 
+    private fun MethodVisitor.writeStubBody() {
+        visitCode()
+        visitTypeInsn(Opcodes.NEW, "java/lang/Exception")
+        visitInsn(Opcodes.DUP)
+        visitLdcInsn("Superset stub body should never be called!")
+        visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Exception", "<init>", "(Ljava/lang/String;)V", false)
+        visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Throwable")
+        visitInsn(Opcodes.ATHROW)
+    }
+
     fun write(node: SSGClass, classWriter: ClassVisitor) {
 
-        classWriter.visit(Opcodes.V1_8, node.access, node.fqName, null, node.superType, node.interfaces)
+        classWriter.visit(Opcodes.V1_8, node.access, node.fqName, node.signature, node.superType, node.interfaces)
 
         classWriter.writeOuterClassInfo(node.ownerInfo)
 
@@ -50,15 +59,21 @@ class SSGClassWriter {
         node.writeAlternativeVisibility { classWriter.visitAnnotation(altVisDesc, true) }
 
         node.fieldsBySignature.values.forEach {
-            classWriter.visitField(Opcodes.ACC_PUBLIC, it.name, it.desc, it.signature, it.value)?.apply {
-                it.writeVersion { visitAnnotation(existsInDesc, true) }
-            }
+            classWriter.visitField(it.access, it.name, it.desc, it.signature, it.value)?.apply {
+                    it.writeVersion { visitAnnotation(existsInDesc, true) }
+                    visitEnd()
+                }
         }
 
         node.methodsBySignature.values.forEach {
-            classWriter.visitMethod(Opcodes.ACC_PUBLIC, it.name, it.desc, it.signature, it.exceptions)?.apply {
-                it.writeVersion { visitAnnotation(existsInDesc, true) }
-            }
+            classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
+                    it.writeVersion { visitAnnotation(existsInDesc, true) }
+                    if (it.access noFlag ACC_ABSTRACT) {
+                        writeStubBody()
+                    }
+                    visitMaxs(-1, -1)
+                    visitEnd()
+                }
         }
 
         node.innerClassesBySignature?.let {

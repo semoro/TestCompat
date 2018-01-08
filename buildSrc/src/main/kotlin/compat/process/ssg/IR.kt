@@ -8,6 +8,7 @@ import org.objectweb.asm.Type
 class SSGClass(
         override var access: Int,
         var fqName: String,
+        var signature: String?,
         var superType: String?,
         var interfaces: Array<String>?,
         override var version: Version?

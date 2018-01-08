@@ -5,8 +5,12 @@ import compat.process.VersionHandler
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
+import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
+import org.objectweb.asm.util.CheckClassAdapter
 import org.slf4j.Logger
 import java.io.File
+import java.io.PrintWriter
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -72,7 +76,7 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
         classesByFqName.values.forEach {
             val sub = File(outDir, it.fqName + ".class")
             sub.parentFile.mkdirs()
-            val cw = ClassWriter(0)
+            val cw = ClassWriter(COMPUTE_FRAMES or COMPUTE_MAXS)
             writer.write(it, cw)
             sub.writeBytes(cw.toByteArray())
             //println("W: $sub")

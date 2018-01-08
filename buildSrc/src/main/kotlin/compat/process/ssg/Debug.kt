@@ -14,6 +14,7 @@ fun SSGClass.asmText(): String {
 }
 
 infix fun Int.hasFlag(i: Int) = this and i != 0
+infix fun Int.noFlag(i: Int) = this and i == 0
 
 
 fun StringBuilder.appendVisibility(access: Int) {

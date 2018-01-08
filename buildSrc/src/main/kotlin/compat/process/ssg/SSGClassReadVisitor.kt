@@ -20,7 +20,7 @@ class SSGClassReadVisitor : ClassVisitor(Opcodes.ASM5) {
 
         if (access hasFlag ACC_PRIVATE) return
         innerClasses.clear()
-        result = SSGClass(access, name!!, superName, interfaces, rootVersion)
+        result = SSGClass(access, name!!, signature, superName, interfaces, rootVersion)
     }
 
     override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<String>?): MethodVisitor? {
