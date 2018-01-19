@@ -24,6 +24,9 @@ class SSGClass(
     val methodsBySignature = mutableMapOf<String, SSGMethod>()
     val fieldsBySignature = mutableMapOf<String, SSGField>()
 
+    val isMemberClass: Boolean
+        get() = ownerInfo != null
+
     fun addField(node: SSGField) {
         assert(node.fqd() !in fieldsBySignature)
         fieldsBySignature[node.fqd()] = node
@@ -148,8 +151,7 @@ class SSGMethod(
     }
 }
 
-interface SSGNode<T : SSGNode<T>> {
-}
+interface SSGNode<T : SSGNode<T>>
 
 interface SSGVersionContainer {
     var version: Version?
@@ -172,4 +174,4 @@ data class SSGInnerClassRef(
         var name: String,
         var outerName: String?,
         var innerName: String?
-): SSGAccess
+) : SSGAccess

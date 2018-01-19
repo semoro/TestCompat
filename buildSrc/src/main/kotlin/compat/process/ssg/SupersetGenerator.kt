@@ -7,10 +7,8 @@ import org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
-import org.objectweb.asm.util.CheckClassAdapter
 import org.slf4j.Logger
 import java.io.File
-import java.io.PrintWriter
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -20,8 +18,6 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
     val merger = SSGMerger(this)
 
     fun appendClasses(classes: Sequence<Path>, version: Version) {
-
-        val visitor = SSGClassReadVisitor()
         var re = 0
         classes.map {
             //println("R: $it")
@@ -35,16 +31,14 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
                 null
             }
         }.forEach {
-            visitor.rootVersion = version
+            val visitor = SSGClassReadVisitor(version)
             it.accept(visitor, SKIP_FRAMES)
-            visitor.result?.let {
-                appendClassNode(it)
-                visitor.result = null
+            val result = visitor.result
+            if (!(result.isMemberClass && result.visibility == Visibility.PACKAGE_PRIVATE)) {
+                appendClassNode(result)
             }
         }
-
-        println("Read stats: ")
-        println("re: $re, ame: ${visitor.ame}, afe: ${visitor.afe}")
+        println("Read stats:\nre: $re")
     }
 
     fun appendClassNode(node: SSGClass) {
