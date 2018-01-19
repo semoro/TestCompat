@@ -35,6 +35,7 @@ subprojects {
     dependencies {
         val compile by configurations
         compile(kotlin("stdlib-jdk8", kotlin_version))
+        compile(kotlin("reflect", kotlin_version))
     }
 
     tasks.withType<KotlinCompile> {

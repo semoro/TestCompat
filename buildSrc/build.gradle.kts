@@ -34,7 +34,6 @@ repositories {
 
 dependencies {
     val compile by configurations
-    compile(kotlin("stdlib-jdk8", kotlin_version))
     compile("org.ow2.asm:asm-all:6.0_BETA")
     compile(gradleApi())
 }
