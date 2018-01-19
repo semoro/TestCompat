@@ -6,4 +6,5 @@ include 'apiV1',
         'apiV2',
         'apiSuperset',
         'compileTimeData',
-        'ourModule'
+        'ourModule',
+        'buildSrc'
