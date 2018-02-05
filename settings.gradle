@@ -7,4 +7,5 @@ include 'apiV1',
         'apiSuperset',
         'compileTimeData',
         'ourModule',
-        'buildSrc'
+        'buildSrc',
+        'ideMerger'
