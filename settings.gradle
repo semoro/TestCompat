@@ -10,4 +10,5 @@ include 'buildSrc',
         'post-processor',
         'common-internals',
         'gradle-plugin',
-        'verifier'
+        'verifier',
+        'ideMerger'

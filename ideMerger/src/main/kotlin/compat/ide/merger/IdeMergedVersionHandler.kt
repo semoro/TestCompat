@@ -1,7 +1,7 @@
 package compat.ide.merger
 
-import compat.process.Version
-import compat.process.VersionHandler
+import org.jetbrains.kotlin.tools.kompat.api.tool.Version
+import org.jetbrains.kotlin.tools.kompat.api.tool.VersionHandler
 
 class IdeMergedVersionHandler : VersionHandler {
     override fun plus(t: Version?, other: Version?): Version? {

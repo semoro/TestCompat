@@ -12,11 +12,11 @@ import com.jetbrains.plugin.structure.intellij.classes.locator.CompileServerExte
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesFinder
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesLocations
 import com.jetbrains.plugin.structure.intellij.plugin.IdePlugin
-import compat.process.ssg.SSGClassReadVisitor
-import compat.process.ssg.SupersetGenerator
-import compat.process.ssg.Visibility
-import compat.process.ssg.visibility
 import org.gradle.api.logging.Logging
+import org.jetbrains.kotlin.tools.kompat.ssg.SSGClassReadVisitor
+import org.jetbrains.kotlin.tools.kompat.ssg.SupersetGenerator
+import org.jetbrains.kotlin.tools.kompat.ssg.Visibility
+import org.jetbrains.kotlin.tools.kompat.ssg.visibility
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
