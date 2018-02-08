@@ -3,24 +3,33 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/TestCompat.iml" filepath="$PROJECT_DIR$/.idea/modules/TestCompat.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset.iml" group="apiSuperset" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_main.iml" group="apiSuperset" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiSuperset/apiSuperset_test.iml" group="apiSuperset" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1.iml" group="apiV1" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1_main.iml" group="apiV1" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV1/apiV1_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV1/apiV1_test.iml" group="apiV1" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2.iml" group="apiV2" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2_main.iml" group="apiV2" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apiV2/apiV2_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apiV2/apiV2_test.iml" group="apiV2" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" group="buildSrc" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData.iml" group="compileTimeData" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_main.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_main.iml" group="compileTimeData" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_test.iml" filepath="$PROJECT_DIR$/.idea/modules/compileTimeData/compileTimeData_test.iml" group="compileTimeData" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule.iml" group="ourModule" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule_main.iml" group="ourModule" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ourModule/ourModule_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ourModule/ourModule_test.iml" group="ourModule" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common-internals/common-internals.iml" filepath="$PROJECT_DIR$/.idea/modules/common-internals/common-internals.iml" group="common-internals" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common-internals/common-internals_main.iml" filepath="$PROJECT_DIR$/.idea/modules/common-internals/common-internals_main.iml" group="common-internals" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common-internals/common-internals_test.iml" filepath="$PROJECT_DIR$/.idea/modules/common-internals/common-internals_test.iml" group="common-internals" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" group="gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" group="gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" group="gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" group="post-processor" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" group="post-processor" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" group="post-processor" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api.iml" group="source-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub.iml" group="source-api/intrinsics-stub" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub_main.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub_main.iml" group="source-api/intrinsics-stub" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub_test.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/source-api-intrinsics-stub_test.iml" group="source-api/intrinsics-stub" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api_main.iml" group="source-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api_test.iml" group="source-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator.iml" group="superset-generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_main.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_main.iml" group="superset-generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_test.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_test.iml" group="superset-generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api.iml" group="tool-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api_main.iml" group="tool-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api_test.iml" group="tool-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/verifier/verifier.iml" filepath="$PROJECT_DIR$/.idea/modules/verifier/verifier.iml" group="verifier" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/verifier/verifier_main.iml" filepath="$PROJECT_DIR$/.idea/modules/verifier/verifier_main.iml" group="verifier" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/verifier/verifier_test.iml" filepath="$PROJECT_DIR$/.idea/modules/verifier/verifier_test.iml" group="verifier" />
     </modules>
   </component>
 </project>

@@ -10,12 +10,36 @@
       <module name="apiV2_test" target="1.8" />
       <module name="buildSrc_main" target="1.8" />
       <module name="buildSrc_test" target="1.8" />
+      <module name="common-internals_main" target="1.8" />
+      <module name="common-internals_test" target="1.8" />
       <module name="compileTimeData_main" target="1.8" />
       <module name="compileTimeData_test" target="1.8" />
+      <module name="gradle-plugin_main" target="1.8" />
+      <module name="gradle-plugin_test" target="1.8" />
+      <module name="ideMerger_main" target="1.8" />
+      <module name="ideMerger_test" target="1.8" />
+      <module name="intrinsics-stub_main" target="1.8" />
+      <module name="intrinsics-stub_test" target="1.8" />
       <module name="ourModule_main" target="1.8" />
       <module name="ourModule_test" target="1.8" />
+      <module name="post-processeor_main" target="1.8" />
+      <module name="post-processeor_test" target="1.8" />
+      <module name="post-processor_main" target="1.8" />
+      <module name="post-processor_test" target="1.8" />
+      <module name="source-api-intrinsics-stub_main" target="1.8" />
+      <module name="source-api-intrinsics-stub_test" target="1.8" />
+      <module name="source-api_main" target="1.8" />
+      <module name="source-api_test" target="1.8" />
+      <module name="superset-generator_main" target="1.8" />
+      <module name="superset-generator_test" target="1.8" />
+      <module name="test-data_main" target="1.8" />
+      <module name="test-data_test" target="1.8" />
       <module name="TestCompat_main" target="1.8" />
       <module name="TestCompat_test" target="1.8" />
+      <module name="tool-api_main" target="1.8" />
+      <module name="tool-api_test" target="1.8" />
+      <module name="verifier_main" target="1.8" />
+      <module name="verifier_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

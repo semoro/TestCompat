@@ -2,10 +2,12 @@ rootProject.name = 'TestCompat'
 //rootProject.buildFileName = 'build.gradle.kts'
 
 
-include 'apiV1',
-        'apiV2',
-        'apiSuperset',
-        'compileTimeData',
-        'ourModule',
-        'buildSrc',
-        'ideMerger'
+include 'buildSrc',
+        'source-api',
+        ':source-api:intrinsics-stub',
+        'tool-api',
+        'superset-generator',
+        'post-processor',
+        'common-internals',
+        'gradle-plugin',
+        'verifier'
