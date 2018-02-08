@@ -24,6 +24,9 @@ class SSGClass(
     val methodsBySignature = mutableMapOf<String, SSGMethod>()
     val fieldsBySignature = mutableMapOf<String, SSGField>()
 
+    val isMemberClass: Boolean
+        get() = ownerInfo != null
+
     fun addField(node: SSGField) {
         assert(node.fqd() !in fieldsBySignature)
         fieldsBySignature[node.fqd()] = node
@@ -38,29 +41,21 @@ class SSGClass(
         return buildString {
             append(version.forDisplay())
 
-            appendVisibility(access)
+            append(access.presentableVisibility + " ")
 
             if (access hasFlag ACC_FINAL) {
                 append("final ")
             }
-            if (access hasFlag ACC_ENUM) {
-                append("enum ")
-            }
-            if (access hasFlag ACC_ANNOTATION) {
-                append("annotation ")
-            }
 
-            if (access hasFlag ACC_INTERFACE) {
-                append("interface ")
-            } else if (access hasFlag ACC_ABSTRACT) {
-                append("abstract ")
+            appendln(access.presentableKind + " $fqName {")
+
+            if (methodsBySignature.isNotEmpty()) {
+                methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
             }
 
-
-            appendln("class $fqName {")
-            methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t")
-            fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\n\t")
-            appendln()
+            if (fieldsBySignature.isNotEmpty()) {
+                fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
+            }
             appendln("}")
         }
     }
@@ -84,7 +79,7 @@ class SSGField(
         return buildString {
             append(version.forDisplay())
 
-            appendVisibility(access)
+            append(access.presentableVisibility + " ")
 
             if (access hasFlag ACC_STATIC) {
                 append("static ")
@@ -130,7 +125,7 @@ class SSGMethod(
         return buildString {
             append(version.forDisplay())
 
-            appendVisibility(access)
+            append(access.presentableVisibility + " ")
             if (access hasFlag ACC_ABSTRACT) {
                 append("abstract ")
             } else if (!(access hasFlag ACC_FINAL)) {
@@ -148,8 +143,7 @@ class SSGMethod(
     }
 }
 
-interface SSGNode<T : SSGNode<T>> {
-}
+interface SSGNode<T : SSGNode<T>>
 
 interface SSGVersionContainer {
     var version: Version?
@@ -172,4 +166,4 @@ data class SSGInnerClassRef(
         var name: String,
         var outerName: String?,
         var innerName: String?
-): SSGAccess
+) : SSGAccess

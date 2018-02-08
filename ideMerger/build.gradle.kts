@@ -22,6 +22,8 @@ plugins {
 var kotlin_version: String by extra
 kotlin_version = "1.2.10"
 
+logging.captureStandardError(LogLevel.INFO)
+logging.captureStandardOutput(LogLevel.INFO)
 
 apply {
     plugin("kotlin")
@@ -30,12 +32,18 @@ apply {
 
 repositories {
     mavenCentral()
+
+    maven {
+        setUrl("https://dl.bintray.com/jetbrains/intellij-plugin-service")
+    }
 }
 
 dependencies {
     val compile by configurations
-    compile("org.ow2.asm:asm-all:6.0_BETA")
     compile(gradleApi())
+    compile("org.jetbrains.intellij.plugins:structure-ide-classes:3.19")
+    compile("org.jetbrains.intellij.plugins:structure-intellij-classes:3.19")
+    compile(project(":buildSrc"))
 }
 
 tasks.withType<KotlinCompile> {
