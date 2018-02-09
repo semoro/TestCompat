@@ -13,10 +13,10 @@ import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesFi
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesLocations
 import com.jetbrains.plugin.structure.intellij.plugin.IdePlugin
 import org.gradle.api.logging.Logging
-import org.jetbrains.kotlin.tools.kompat.ssg.SSGClassReadVisitor
-import org.jetbrains.kotlin.tools.kompat.ssg.SupersetGenerator
-import org.jetbrains.kotlin.tools.kompat.ssg.Visibility
-import org.jetbrains.kotlin.tools.kompat.ssg.visibility
+import org.jetbrains.kotlin.tools.kompot.ssg.SSGClassReadVisitor
+import org.jetbrains.kotlin.tools.kompot.ssg.SupersetGenerator
+import org.jetbrains.kotlin.tools.kompot.ssg.Visibility
+import org.jetbrains.kotlin.tools.kompot.ssg.visibility
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
@@ -33,7 +33,8 @@ fun main(args: Array<String>) {
     val outputPath = paths.last()
 
     val versionHandler = IdeMergedVersionHandler()
-    val supersetGenerator = SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler)
+    val supersetGenerator =
+        SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler)
 
     for (idePath in idePaths) {
         appendIde(supersetGenerator, idePath)

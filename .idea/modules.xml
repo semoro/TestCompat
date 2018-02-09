@@ -12,6 +12,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" group="gradle-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" group="gradle-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" group="gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger.iml" group="ideMerger" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_main.iml" group="ideMerger" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_test.iml" group="ideMerger" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" group="post-processor" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" group="post-processor" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" group="post-processor" />
