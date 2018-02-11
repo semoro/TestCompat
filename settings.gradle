@@ -7,8 +7,10 @@ include 'buildSrc',
         ':source-api:intrinsics-stub',
         'tool-api',
         'superset-generator',
+        'superset-generator:test-data',
         'post-processor',
         'common-internals',
         'gradle-plugin',
         'verifier',
-        'ideMerger'
+        'ideMerger',
+        'test-helpers'
