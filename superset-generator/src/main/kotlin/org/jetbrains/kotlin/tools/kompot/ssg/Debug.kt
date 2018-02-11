@@ -1,13 +1,13 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.objectweb.asm.util.TraceClassVisitor
-import java.io.ByteArrayOutputStream
 import java.io.PrintWriter
+import java.io.StringWriter
 
 fun SSGClass.asmText(): String {
     val writer = SSGClassWriter()
-    val baos = ByteArrayOutputStream()
-    val cv = TraceClassVisitor(PrintWriter(baos))
+    val sw = StringWriter()
+    val cv = TraceClassVisitor(PrintWriter(sw))
     writer.write(this, cv)
-    return baos.toString("UTF-8")
+    return sw.toString()
 }
