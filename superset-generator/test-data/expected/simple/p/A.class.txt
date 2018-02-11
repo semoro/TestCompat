@@ -7,4 +7,38 @@ public class p/A {
 
   // access flags 0x1
   public <init>()V
+
+  // access flags 0x9
+  public static commonStaticA()V
+
+  // access flags 0x9
+  public static staticV1()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
+
+  // access flags 0x1
+  public common()V
+
+  // access flags 0x1
+  public v1()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
+
+  // access flags 0x1
+  public paramDiff(Ljava/lang/String;)V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
+
+  // access flags 0x1
+  public publicInV1()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/AlternativeVisibility;(version={"1", "2"}, visibility={Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Visibility;.PUBLIC, Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Visibility;.PROTECTED})
+
+  // access flags 0x9
+  public static staticV2()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
+
+  // access flags 0x1
+  public v2()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
+
+  // access flags 0x1
+  public paramDiff(Ljava/lang/String;Ljava/lang/String;)V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
 }

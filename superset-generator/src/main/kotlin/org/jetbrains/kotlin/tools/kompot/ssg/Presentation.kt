@@ -4,8 +4,8 @@ import org.objectweb.asm.Opcodes
 
 val Int.presentableKind: String
     get() = when {
-        this hasFlag Opcodes.ACC_ENUM -> "enum"
-        this hasFlag Opcodes.ACC_ANNOTATION -> "annotation"
+        this hasFlag Opcodes.ACC_ENUM -> "enum class"
+        this hasFlag Opcodes.ACC_ANNOTATION -> "annotation class"
         this hasFlag Opcodes.ACC_INTERFACE -> "interface"
         this hasFlag Opcodes.ACC_ABSTRACT -> "abstract class"
         else -> "class"

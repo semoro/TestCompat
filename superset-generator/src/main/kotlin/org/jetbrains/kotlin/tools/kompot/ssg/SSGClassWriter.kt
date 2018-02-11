@@ -63,20 +63,22 @@ class SSGClassWriter {
 
         node.fieldsBySignature.values.forEach {
             classWriter.visitField(it.access, it.name, it.desc, it.signature, it.value)?.apply {
-                    it.writeVersion { visitAnnotation(existsInDesc, true) }
-                    visitEnd()
-                }
+                it.writeVersion { visitAnnotation(existsInDesc, true) }
+                it.writeAlternativeVisibility { visitAnnotation(altVisDesc, true) }
+                visitEnd()
+            }
         }
 
         node.methodsBySignature.values.forEach {
             classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
-                    it.writeVersion { visitAnnotation(existsInDesc, true) }
-                    if (it.access noFlag ACC_ABSTRACT) {
-                        writeStubBody()
-                    }
-                    visitMaxs(-1, -1)
-                    visitEnd()
+                it.writeVersion { visitAnnotation(existsInDesc, true) }
+                it.writeAlternativeVisibility { visitAnnotation(altVisDesc, true) }
+                if (it.access noFlag ACC_ABSTRACT) {
+                    writeStubBody()
                 }
+                visitMaxs(-1, -1)
+                visitEnd()
+            }
         }
 
         node.innerClassesBySignature?.let {

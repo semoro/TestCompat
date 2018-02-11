@@ -7,6 +7,8 @@ dependencies {
     compile(project(":source-api"))
     compile(project(":tool-api"))
 
+    testCompile("org.slf4j:slf4j-simple:1.7.25")
+
     testCompile(project(":test-helpers"))
 }
 

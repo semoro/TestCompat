@@ -38,7 +38,7 @@ class SSGMerger(val generator: SupersetGenerator) {
     var fMergeFailure = 0
     var fMergeSuccess = 0
 
-    fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
+    private fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
         val fqd = sourceField.fqd()
         val targetField = to.fieldsBySignature[fqd] ?: return to.addField(sourceField)
 
@@ -57,7 +57,7 @@ class SSGMerger(val generator: SupersetGenerator) {
         fMergeFailure++
     }
 
-    fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
+    private fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
 
@@ -81,7 +81,7 @@ class SSGMerger(val generator: SupersetGenerator) {
         mMergeSuccess++
     }
 
-    fun mergeClassesInternals(a: SSGClass, b: SSGClass) {
+    private fun mergeClassesInternals(a: SSGClass, b: SSGClass) {
         a.version = mergeVersions(a.version, b.version)
         b.methodsBySignature.values.forEach {
             appendMethod(a, it, b)
@@ -91,7 +91,7 @@ class SSGMerger(val generator: SupersetGenerator) {
         }
     }
 
-    fun <T> mergeVisibilities(into: T, from: T)
+    private fun <T> mergeVisibilities(into: T, from: T)
             where T : SSGAlternativeVisibilityContainer, T : SSGVersionContainer {
         if (!into.sameVisibility(from)) {
             val intoVis = into.visibility
