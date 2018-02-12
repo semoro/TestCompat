@@ -1,50 +1,30 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
-import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.slf4j.Logger
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
 
 class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) {
 
     val classesByFqName = mutableMapOf<String, SSGClass>()
     val merger = SSGMerger(this)
 
-    fun appendClasses(classes: Sequence<Path>, version: Version) {
-        var re = 0
-        classes.map {
-            //println("R: $it")
-            Files.newInputStream(it)
-        }.mapNotNull {
-            try {
-                ClassReader(it)
-            } catch (e: Throwable) {
-                //logger.error("Error while reading class", e)
-                re++
-                null
-            }
+    fun appendClasses(classes: Sequence<SSGClass>) {
+        classes.filter {
+            !it.isMemberClass || it.visibility != Visibility.PACKAGE_PRIVATE
         }.forEach {
-            val visitor = SSGClassReadVisitor(version)
-            it.accept(visitor, SKIP_FRAMES)
-            val result = visitor.result
-            if (!(result.isMemberClass && result.visibility == Visibility.PACKAGE_PRIVATE)) {
-                appendClassNode(result)
-            }
+            appendClassNode(it)
         }
-        println("Read stats:\nre: $re")
     }
 
     fun appendClassNode(node: SSGClass) {
-        classesByFqName[node.fqName]?.let { merger.mergeClasses(it, node) } ?:
-                run { classesByFqName[node.fqName] = node }
+        classesByFqName[node.fqName]?.let { merger.mergeClasses(it, node) } ?: run {
+            classesByFqName[node.fqName] = node
+        }
     }
 
     fun cleanupVersions() {

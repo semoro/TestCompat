@@ -13,9 +13,9 @@ import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesFi
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesLocations
 import com.jetbrains.plugin.structure.intellij.plugin.IdePlugin
 import org.gradle.api.logging.Logging
+import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.ssg.SSGClassReadVisitor
 import org.jetbrains.kotlin.tools.kompot.ssg.SupersetGenerator
-import org.jetbrains.kotlin.tools.kompot.ssg.Visibility
 import org.jetbrains.kotlin.tools.kompot.ssg.visibility
 import java.nio.file.Path
 import java.nio.file.Paths

@@ -6,7 +6,7 @@ import org.objectweb.asm.Opcodes.ACC_PRIVATE
 
 const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 
-class SSGClassReadVisitor(private val rootVersion: Version) : ClassVisitor(Opcodes.ASM5) {
+class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opcodes.ASM5) {
 
     lateinit var result: SSGClass
     private var innerClasses = mutableMapOf<String, SSGInnerClassRef>()

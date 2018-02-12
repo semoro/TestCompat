@@ -22,7 +22,8 @@ class TestSupersetGenerator {
 
     fun appendClasses(roots: List<String>, version: Version) {
         val classes = classpathToClassFiles(roots.map { File("test-data/build/libs/$it") })
-        gen.appendClasses(classes, version)
+        val reader = ClassToIRReader(classes, version)
+        gen.appendClasses(reader.classes)
     }
 
     @Test
