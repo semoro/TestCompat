@@ -5,7 +5,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 
 fun SSGClass.asmText(): String {
-    val writer = SSGClassWriter()
+    val writer = SSGClassWriter(withBodyStubs = false)
     val sw = StringWriter()
     val cv = TraceClassVisitor(PrintWriter(sw))
     writer.write(this, cv)

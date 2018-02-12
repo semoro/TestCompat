@@ -1,40 +1,56 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
-import org.jetbrains.kotlin.tools.kompot.commons.altVisDesc
-import org.jetbrains.kotlin.tools.kompot.commons.existsInDesc
-import org.jetbrains.kotlin.tools.kompot.commons.visEnumDesc
+import org.jetbrains.kotlin.tools.kompot.api.tool.Version
+import org.jetbrains.kotlin.tools.kompot.commons.*
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.ACC_ABSTRACT
 
-class SSGClassWriter {
+class SSGClassWriter(val withBodyStubs: Boolean = true) {
 
-    fun SSGVersionContainer.writeVersion(getVisitor: () -> AnnotationVisitor?) {
+    fun SSGVersionContainer.writeVersion(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
         val version = version ?: return
-        getVisitor()?.apply {
+        getVisitor(existsInDesc, true)?.apply {
             visit("version", version.asLiteralValue())
             visitEnd()
         }
     }
 
-    fun SSGAlternativeVisibilityContainer.writeAlternativeVisibility(getVisitor: () -> AnnotationVisitor?) {
-        val alternativeVisibility = alternativeVisibility ?: return
-        getVisitor()?.apply {
-            val (visibilities, versions) = alternativeVisibility.toList().filter { it.second != null }.unzip()
+    private fun writeAltAnnotation(
+        arrayName: String,
+        enumDesc: String,
+        annDesc: String,
+        getVisitor: (String, Boolean) -> AnnotationVisitor?,
+        enumValues: List<Enum<*>>,
+        versions: List<Version?>
+    ) {
+        getVisitor(annDesc, true)?.apply {
             visitArray("version")?.apply {
                 versions.forEach { visit(null, it!!.asLiteralValue()) }
                 visitEnd()
             }
-            visitArray("visibility")?.apply {
-                for (visibility in visibilities) {
-                    visitEnum("visibility", visEnumDesc, visibility.name)
+            visitArray(arrayName)?.apply {
+                for (value in enumValues) {
+                    visitEnum(arrayName, enumDesc, value.name)
                 }
                 visitEnd()
             }
             visitEnd()
         }
+    }
+
+    private fun SSGAlternativeVisibilityContainer.writeAlternativeVisibility(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
+        val alternativeVisibility = alternativeVisibility ?: return
+        val (visibilities, versions) = alternativeVisibility.toList().filter { it.second != null }.unzip()
+        writeAltAnnotation("visibility", visEnumDesc, altVisDesc, getVisitor, visibilities, versions)
+    }
+
+    private fun SSGAlternativeModalityContainer.writeAlternativeModality(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
+        val alternativeModality = alternativeModalityState ?: return
+        val (modalities, versions) = alternativeModality.toList().filter { it.second != null }.unzip()
+        writeAltAnnotation("modality", modEnumDesc, altModDesc, getVisitor, modalities, versions)
     }
 
     private fun ClassVisitor.writeOuterClassInfo(info: OuterClassInfo?) {
@@ -52,29 +68,36 @@ class SSGClassWriter {
         visitInsn(Opcodes.ATHROW)
     }
 
+
+
     fun write(node: SSGClass, classWriter: ClassVisitor) {
 
         classWriter.visit(Opcodes.V1_8, node.access, node.fqName, node.signature, node.superType, node.interfaces)
 
         classWriter.writeOuterClassInfo(node.ownerInfo)
 
-        node.writeVersion { classWriter.visitAnnotation(existsInDesc, true) }
-        node.writeAlternativeVisibility { classWriter.visitAnnotation(altVisDesc, true) }
+        node.writeVersion(classWriter::visitAnnotation)
+        node.writeAlternativeVisibility(classWriter::visitAnnotation)
+        node.writeAlternativeModality(classWriter::visitAnnotation)
 
         node.fieldsBySignature.values.forEach {
             classWriter.visitField(it.access, it.name, it.desc, it.signature, it.value)?.apply {
-                it.writeVersion { visitAnnotation(existsInDesc, true) }
-                it.writeAlternativeVisibility { visitAnnotation(altVisDesc, true) }
+                it.writeVersion(::visitAnnotation)
+                it.writeAlternativeVisibility(::visitAnnotation)
+
                 visitEnd()
             }
         }
 
         node.methodsBySignature.values.forEach {
             classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
-                it.writeVersion { visitAnnotation(existsInDesc, true) }
-                it.writeAlternativeVisibility { visitAnnotation(altVisDesc, true) }
+                it.writeVersion(::visitAnnotation)
+                it.writeAlternativeVisibility(::visitAnnotation)
+                it.writeAlternativeModality(::visitAnnotation)
                 if (it.access noFlag ACC_ABSTRACT) {
-                    writeStubBody()
+                    if (withBodyStubs) {
+                        writeStubBody()
+                    }
                 }
                 visitMaxs(-1, -1)
                 visitEnd()

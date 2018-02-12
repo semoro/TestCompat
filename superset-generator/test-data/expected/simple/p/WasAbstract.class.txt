@@ -1,0 +1,16 @@
+// class version 52.0 (52)
+// access flags 0x421
+public abstract class p/WasAbstract {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1, 2")
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/AlternativeModality;(version={"1", "2"}, modality={Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Modality;.ABSTRACT, Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Modality;.OPEN})
+
+  // access flags 0x1
+  public <init>()V
+
+  // access flags 0x401
+  public abstract alsoAbstract()V
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/AlternativeModality;(version={"1", "2"}, modality={Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Modality;.ABSTRACT, Lorg/jetbrains/kotlin/tools/kompot/api/annotations/Modality;.OPEN})
+}

@@ -1,19 +1,28 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
+import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.objectweb.asm.Opcodes.*
 
 private const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC or ACC_PROTECTED
-private const val KIND_MASK = ACC_INTERFACE or ACC_ABSTRACT or ACC_ANNOTATION or ACC_ENUM
+private const val KIND_MASK = ACC_INTERFACE or ACC_ANNOTATION or ACC_ENUM
+private const val MODALITY_MASK = ACC_ABSTRACT or ACC_FINAL
 
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
 
 
-fun SSGAccess.sameVisibility(other: SSGAccess): Boolean = access.sameMasked(other.access,
+fun SSGAccess.sameVisibility(other: SSGAccess): Boolean = access.sameMasked(
+    other.access,
     VISIBILITY_MASK
 )
-fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(other.access,
+
+fun SSGAccess.sameModality(other: SSGAccess): Boolean = access.sameMasked(
+    other.access,
+    MODALITY_MASK
+)
+fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(
+    other.access,
     KIND_MASK
 )
 
@@ -43,7 +52,7 @@ class SSGMerger(val generator: SupersetGenerator) {
         val fqd = sourceField.fqd()
         val targetField = to.fieldsBySignature[fqd] ?: return to.addField(sourceField)
 
-        if (targetField.sameKind(sourceField)) {
+        if (targetField.modality == sourceField.modality) {
             mergeVisibilities(targetField, sourceField)
 
             targetField.version = mergeVersions(targetField.version, sourceField.version)
@@ -62,19 +71,15 @@ class SSGMerger(val generator: SupersetGenerator) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
 
-        fun reportMergeFailure() {
-            generator.logger.error("Couldn't merge methods")
+        fun reportMergeFailure(message: String) {
+            generator.logger.error("Couldn't merge methods: $message")
             generator.logger.error("target: ${to.fqName}.$targetMethod")
             generator.logger.error("source: ${source.fqName}.$sourceMethod")
             mMergeFailure++
         }
 
-        if (!targetMethod.sameKind(sourceMethod)) {
-            reportMergeFailure()
-            return
-        }
 
-
+        mergeModalities(targetMethod, sourceMethod)
         mergeVisibilities(targetMethod, sourceMethod)
 
         targetMethod.version = mergeVersions(targetMethod.version, sourceMethod.version)
@@ -102,7 +107,19 @@ class SSGMerger(val generator: SupersetGenerator) {
             into.alternativeVisibility().let { it[intoVis] = it[intoVis] + into.version }
             into.alternativeVisibility().let { it[fromVis] = it[fromVis] + from.version }
 
-            into.visibility = Visibility.PUBLIC
+            into.visibility = into.alternativeVisibility().keys.max() ?: Visibility.PUBLIC
+        }
+    }
+
+    private fun <T : SSGAlternativeModalityContainer> mergeModalities(into: T, from: T) {
+        if (!into.sameModality(from)) {
+
+            val intoModality = into.modality
+            val fromModality = from.modality
+
+            into.alternativeModality[intoModality] = into.alternativeModality[intoModality] + into.version
+            into.alternativeModality[fromModality] = into.alternativeModality[fromModality] + from.version
+            into.modality = into.alternativeModality.keys.max() ?: Modality.OPEN
         }
     }
 
@@ -143,6 +160,7 @@ class SSGMerger(val generator: SupersetGenerator) {
             return
         }
         mergeVisibilities(a, b)
+        mergeModalities(a, b)
         mergeClassesInternals(a, b)
         mergeSuccess++
     }
@@ -175,5 +193,23 @@ var SSGAccess.visibility: Visibility
             Visibility.PRIVATE -> ACC_PRIVATE
         }
         access = access and (VISIBILITY_MASK.inv()) or flag
+    }
+
+
+var SSGAccess.modality: Modality
+    get() {
+        return when {
+            access.hasFlag(ACC_ABSTRACT) -> Modality.ABSTRACT
+            access.hasFlag(ACC_FINAL) -> Modality.FINAL
+            else -> Modality.OPEN
+        }
+    }
+    set(value) {
+        val flag = when(value) {
+            Modality.FINAL -> ACC_FINAL
+            Modality.ABSTRACT -> ACC_ABSTRACT
+            Modality.OPEN -> 0
+        }
+        access = access and (MODALITY_MASK.inv()) or flag
     }
 
