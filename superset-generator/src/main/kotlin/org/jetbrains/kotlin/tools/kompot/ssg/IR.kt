@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
+import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
 import org.objectweb.asm.Opcodes.*
@@ -106,10 +107,6 @@ class SSGField(
 private fun Version?.forDisplay(): String {
     if (this == null) return ""
     return "@ExistsIn(${this.asLiteralValue()}) "
-}
-
-enum class Visibility {
-    PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE
 }
 
 class SSGMethod(

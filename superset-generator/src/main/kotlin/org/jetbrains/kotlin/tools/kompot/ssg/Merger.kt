@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
+import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.objectweb.asm.Opcodes.*
 
