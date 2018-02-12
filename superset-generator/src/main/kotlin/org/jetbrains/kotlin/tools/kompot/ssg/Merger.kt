@@ -9,6 +9,9 @@ private const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC or A
 private const val KIND_MASK = ACC_INTERFACE or ACC_ANNOTATION or ACC_ENUM
 private const val MODALITY_MASK = ACC_ABSTRACT or ACC_FINAL
 
+private const val METHOD_KIND_MASK =
+    ACC_BRIDGE or ACC_SYNTHETIC or ACC_STATIC or ACC_NATIVE or ACC_SYNCHRONIZED or ACC_STRICT or ACC_VARARGS
+
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
 
 
@@ -78,6 +81,9 @@ class SSGMerger(val generator: SupersetGenerator) {
             mMergeFailure++
         }
 
+        if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
+            reportMergeFailure("Kind mismatch")
+        }
 
         mergeModalities(targetMethod, sourceMethod)
         mergeVisibilities(targetMethod, sourceMethod)
