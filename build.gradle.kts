@@ -45,3 +45,8 @@ subprojects {
     }
 
 }
+
+
+project(":kotlinx.reflect.lite") {
+    apply { from("$rootDir/kotlinx.reflect.lite.build.gradle.kts") }
+}

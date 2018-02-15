@@ -1,0 +1,3 @@
+[submodule "kotlinx.reflect.lite"]
+	path = kotlinx.reflect.lite
+	url = https://github.com/Kotlin/kotlinx.reflect.lite.git

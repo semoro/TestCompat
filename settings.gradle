@@ -13,4 +13,8 @@ include 'buildSrc',
         'gradle-plugin',
         'verifier',
         'ideMerger',
-        'test-helpers'
+        'test-helpers',
+        ":kotlinx.reflect.lite"
+
+
+project(":kotlinx.reflect.lite").projectDir = new File("kotlinx.reflect.lite")
