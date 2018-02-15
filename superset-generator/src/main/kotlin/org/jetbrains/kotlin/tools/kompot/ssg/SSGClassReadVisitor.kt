@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
+import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ACC_PRIVATE
 
@@ -9,13 +10,11 @@ const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opcodes.ASM5) {
 
     lateinit var result: SSGClass
-    private var innerClasses = mutableMapOf<String, SSGInnerClassRef>()
 
     override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<String>?) {
         super.visit(version, access, name, signature, superName, interfaces)
 
         if (access hasFlag ACC_PRIVATE) return
-        innerClasses.clear()
         result = SSGClass(
             access,
             name!!,
@@ -24,6 +23,13 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
             interfaces,
             rootVersion
         )
+    }
+
+    override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
+        if (desc == kotlinMetadataDesc) {
+            result.isKotlin = true
+        }
+        return super.visitAnnotation(desc, visible)
     }
 
     override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<String>?): MethodVisitor? {
@@ -51,29 +57,18 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
         }
     }
 
-    override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
-        if (desc == kotlinMetadataDesc) {
-            result.isKotlin = true
-        }
-        return super.visitAnnotation(desc, visible)
-    }
 
     override fun visitInnerClass(name: String, outerName: String?, innerName: String?, access: Int) {
         super.visitInnerClass(name, outerName, innerName, access)
         if (access hasFlag ACC_PRIVATE) return
-        innerClasses[name] = SSGInnerClassRef(access, name, outerName, innerName)
+
+        val innerClassesBySignature = result::innerClassesBySignature.getOrInit { mutableMapOf() }
+        innerClassesBySignature[name] = SSGInnerClassRef(access, name, outerName, innerName)
     }
+
 
     override fun visitOuterClass(owner: String, name: String?, desc: String?) {
         super.visitOuterClass(owner, name, desc)
         result.ownerInfo = OuterClassInfo(owner, name, desc)
-    }
-
-    override fun visitEnd() {
-        super.visitEnd()
-        if (innerClasses.isNotEmpty()) {
-            result.innerClassesBySignature = mutableMapOf()
-            result.innerClassesBySignature!!.putAll(innerClasses)
-        }
     }
 }
