@@ -3,17 +3,16 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
-import org.objectweb.asm.Opcodes.*
+import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.classKindMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.kotlinMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
 
-private const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC or ACC_PROTECTED
-private const val KIND_MASK = ACC_INTERFACE or ACC_ANNOTATION or ACC_ENUM
-private const val MODALITY_MASK = ACC_ABSTRACT or ACC_FINAL
-
-private const val METHOD_KIND_MASK =
-    ACC_BRIDGE or ACC_SYNTHETIC or ACC_STATIC or ACC_NATIVE or ACC_SYNCHRONIZED or ACC_STRICT or ACC_VARARGS
 
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
-
 
 fun SSGAccess.sameVisibility(other: SSGAccess): Boolean = access.sameMasked(
     other.access,
@@ -24,83 +23,109 @@ fun SSGAccess.sameModality(other: SSGAccess): Boolean = access.sameMasked(
     other.access,
     MODALITY_MASK
 )
+
 fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(
     other.access,
     KIND_MASK
 )
 
-infix fun Int.hasFlag(i: Int) = this and i != 0
-infix fun Int.noFlag(i: Int) = this and i == 0
 
 class SSGMerger(val generator: SupersetGenerator) {
 
     operator fun Version?.plus(other: Version?) = generator.versionHandler.plus(this, other)
     operator fun Version?.contains(other: Version?) = generator.versionHandler.contains(this, other)
 
-    fun both(a: Int, b: Int, c: Int, mask: Int): Int {
-        return a xor (b and c and mask).inv()
+    val Classes = object : MergeProtectionScope<SSGClass>("Classes") {
+        override fun onFail(mfe: MergeFailedException, a: SSGClass, b: SSGClass) {
+            generator.logger.error(
+                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
+                        "Target: $a\n" +
+                        "Source: $b\n"
+            )
+            super.onFail(mfe, a, b)
+        }
     }
-
-    var mergeSuccess = 0
-    var mergeFailure = 0
-    var kMergeFailure = 0
-
-    var mMergeFailure = 0
-    var mMergeSuccess = 0
-
-    var fMergeFailure = 0
-    var fMergeSuccess = 0
+    val Fields = object : MergeProtectionScope<SSGField>("Fields") {
+        override fun onFail(mfe: MergeFailedException, a: SSGField, b: SSGField) {
+            generator.logger.error(
+                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
+                        "Target: $a\n" +
+                        "Source: $b\n"
+            )
+            super.onFail(mfe, a, b)
+        }
+    }
+    val Methods = object : MergeProtectionScope<SSGMethod>("Methods") {
+        override fun onFail(mfe: MergeFailedException, a: SSGMethod, b: SSGMethod) {
+            generator.logger.error(
+                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
+                        "Target: ${a.debugText()}\n" +
+                        "Source: ${b.debugText()}\n"
+            )
+            super.onFail(mfe, a, b)
+        }
+    }
 
     private fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
         val fqd = sourceField.fqd()
         val targetField = to.fieldsBySignature[fqd] ?: return to.addField(sourceField)
+        mergeFields(targetField, sourceField)
+    }
+
+    private fun mergeFields(targetField: SSGField, sourceField: SSGField) = tryMerge(Fields, targetField, sourceField) {
+        if (targetField.signature != sourceField.signature) {
+            reportMergeFailure(genericsMismatch, "${targetField.signature} != ${sourceField.desc}")
+        }
+
+        if (targetField.modality != sourceField.modality) {
+            reportMergeFailure(fieldModalityMismatch, "$")
+        }
 
         if (targetField.modality == sourceField.modality) {
             mergeVisibilities(targetField, sourceField)
 
-            targetField.version = mergeVersions(targetField.version, sourceField.version)
-
-            fMergeSuccess++
-            return
+            targetField.version = targetField.version + sourceField.version
         }
-
-        generator.logger.error("Couldn't merge fields")
-        generator.logger.error("target: ${to.fqName}.$targetField")
-        generator.logger.error("source: ${source.fqName}.$sourceField")
-        fMergeFailure++
     }
 
     private fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
+        tryMerge(Methods, targetMethod, sourceMethod) {
+            if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
+                reportMergeFailure(methodKindMismatch, "")
+            }
 
-        fun reportMergeFailure(message: String) {
-            generator.logger.error("Couldn't merge methods: $message")
-            generator.logger.error("target: ${to.fqName}.$targetMethod")
-            generator.logger.error("source: ${source.fqName}.$sourceMethod")
-            mMergeFailure++
+            if (targetMethod.signature != sourceMethod.signature) {
+                reportMergeFailure(genericsMismatch, "${targetMethod.signature} != ${sourceMethod.signature}")
+            }
+
+            mergeModalities(targetMethod, sourceMethod)
+            mergeVisibilities(targetMethod, sourceMethod)
+
+            targetMethod.version = targetMethod.version + sourceMethod.version
         }
-
-        if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
-            reportMergeFailure("Kind mismatch")
-        }
-
-        mergeModalities(targetMethod, sourceMethod)
-        mergeVisibilities(targetMethod, sourceMethod)
-
-        targetMethod.version = mergeVersions(targetMethod.version, sourceMethod.version)
-
-        mMergeSuccess++
     }
 
     private fun mergeClassesInternals(a: SSGClass, b: SSGClass) {
-        a.version = mergeVersions(a.version, b.version)
+        a.version = a.version + b.version
         b.methodsBySignature.values.forEach {
             appendMethod(a, it, b)
         }
         b.fieldsBySignature.values.forEach {
             appendField(a, it, b)
         }
+
+        if (b.innerClassesBySignature != null) {
+            val target = a::innerClassesBySignature.getOrInit { mutableMapOf() }
+            b.innerClassesBySignature?.forEach { (signature, value) ->
+                val sameSignatureRef = target[signature]
+                if (sameSignatureRef != null && sameSignatureRef != value) {
+                    generator.logger.error("Different inner classes with same signature: $sameSignatureRef != $value")
+                }
+            }
+        }
+
     }
 
     private fun <T> mergeVisibilities(into: T, from: T)
@@ -110,10 +135,10 @@ class SSGMerger(val generator: SupersetGenerator) {
             val fromVis = from.visibility
 
             // += workaround KT-21724
-            into.alternativeVisibility().let { it[intoVis] = it[intoVis] + into.version }
-            into.alternativeVisibility().let { it[fromVis] = it[fromVis] + from.version }
+            into.alternativeVisibility[intoVis] = into.alternativeVisibility[intoVis] + into.version
+            into.alternativeVisibility[fromVis] = into.alternativeVisibility[fromVis] + from.version
 
-            into.visibility = into.alternativeVisibility().keys.max() ?: Visibility.PUBLIC
+            into.visibility = into.alternativeVisibility.keys.max() ?: Visibility.PUBLIC
         }
     }
 
@@ -135,87 +160,29 @@ class SSGMerger(val generator: SupersetGenerator) {
             return
         }
 
-        fun reportMergeFailure(message: String) {
-            generator.logger.error("""
-                |$message
-                |Failed to merge:
-                |$a
-                |with:
-                |$b
-                |
-                |ASM:
-                |${a.asmText()}
-                |VS
-                |${b.asmText()}
-                |""".trimMargin())
-
+        tryMerge(Classes, a, b) {
+            if (a.isKotlin != b.isKotlin) {
+                reportMergeFailure(kotlinMismatch, "Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
+            }
+            if (!a.sameKind(b)) {
+                reportMergeFailure(classKindMismatch, "")
+            }
+            if (a.ownerInfo != b.ownerInfo) {
+                reportMergeFailure(ownerClassMismatch, "${a.ownerInfo} != ${b.ownerInfo}")
+            }
+            if (a.signature != b.signature) {
+                reportMergeFailure(genericsMismatch, "${a.signature} != ${b.signature}")
+            }
+            mergeVisibilities(a, b)
+            mergeModalities(a, b)
+            mergeClassesInternals(a, b)
         }
-        if (a.isKotlin != b.isKotlin) {
-            reportMergeFailure("Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
-            kMergeFailure++
-            return
-        }
-        if (!a.sameKind(b)) {
-            reportMergeFailure("Kind mismatch")
-            mergeFailure++
-            return
-        }
-        if (a.ownerInfo != b.ownerInfo) {
-            reportMergeFailure("Owner mismatch ${a.ownerInfo} != ${b.ownerInfo}")
-            mergeFailure++
-            return
-        }
-        mergeVisibilities(a, b)
-        mergeModalities(a, b)
-        mergeClassesInternals(a, b)
-        mergeSuccess++
     }
 
-    fun mergeVersions(a: Version?, b: Version?) = a + b
-
-    fun formatStatistics(): String {
-        return "Classes s: $mergeSuccess, f: $mergeFailure, kf: $kMergeFailure, t: ${mergeSuccess + mergeFailure + kMergeFailure}\n" +
-                "Fields s: $fMergeSuccess, f: $fMergeFailure, t: ${fMergeSuccess + fMergeFailure}\n" +
-                "Methods s: $mMergeSuccess, f: $mMergeFailure, t: ${mMergeSuccess + mMergeFailure}\n"
+    fun formatStatistics(): String = buildString {
+        append(Classes.statistics())
+        append(Fields.statistics())
+        append(Methods.statistics())
     }
 }
-
-var SSGAccess.visibility: Visibility
-    get() {
-        return with(access) {
-            when {
-                hasFlag(ACC_PUBLIC) -> Visibility.PUBLIC
-                hasFlag(ACC_PROTECTED) -> Visibility.PROTECTED
-                hasFlag(ACC_PRIVATE) -> Visibility.PRIVATE
-                else -> Visibility.PACKAGE_PRIVATE
-            }
-        }
-    }
-    set(value) {
-        val flag = when (value) {
-            Visibility.PUBLIC -> ACC_PUBLIC
-            Visibility.PROTECTED -> ACC_PROTECTED
-            Visibility.PACKAGE_PRIVATE -> 0
-            Visibility.PRIVATE -> ACC_PRIVATE
-        }
-        access = access and (VISIBILITY_MASK.inv()) or flag
-    }
-
-
-var SSGAccess.modality: Modality
-    get() {
-        return when {
-            access.hasFlag(ACC_ABSTRACT) -> Modality.ABSTRACT
-            access.hasFlag(ACC_FINAL) -> Modality.FINAL
-            else -> Modality.OPEN
-        }
-    }
-    set(value) {
-        val flag = when(value) {
-            Modality.FINAL -> ACC_FINAL
-            Modality.ABSTRACT -> ACC_ABSTRACT
-            Modality.OPEN -> 0
-        }
-        access = access and (MODALITY_MASK.inv()) or flag
-    }
 

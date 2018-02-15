@@ -4,8 +4,10 @@ import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
+import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type
+import org.objectweb.asm.tree.AnnotationNode
 
 class SSGClass(
     override var access: Int,
@@ -22,7 +24,7 @@ class SSGClass(
 
     var isKotlin = false
 
-    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
     override var alternativeModalityState: MutableMap<Modality, Version?>? = null
 
     var innerClassesBySignature: MutableMap<String, SSGInnerClassRef>? = null
@@ -57,7 +59,7 @@ class SSGClass(
             appendln(access.presentableKind + " $fqName {")
 
             if (methodsBySignature.isNotEmpty()) {
-                methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
+                methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n") { it.debugText() }
             }
 
             if (fieldsBySignature.isNotEmpty()) {
@@ -80,7 +82,7 @@ class SSGField(
     SSGAlternativeVisibilityContainer,
     SSGAccess {
 
-    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
 
     fun fqd(): String = name + desc
 
@@ -107,10 +109,6 @@ class SSGField(
     }
 }
 
-private fun Version?.forDisplay(): String {
-    if (this == null) return ""
-    return "@ExistsIn(${this.asLiteralValue()}) "
-}
 
 class SSGMethod(
     override var access: Int,
@@ -126,31 +124,10 @@ class SSGMethod(
     SSGAccess {
 
     override var alternativeModalityState: MutableMap<Modality, Version?>? = null
-    override var alternativeVisibility: MutableMap<Visibility, Version?>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
 
     fun fqd(): String {
         return name + desc
-    }
-
-    override fun toString(): String {
-        return buildString {
-            append(version.forDisplay())
-
-            append(access.presentableVisibility + " ")
-            if (access hasFlag ACC_ABSTRACT) {
-                append("abstract ")
-            } else if (!(access hasFlag ACC_FINAL)) {
-                append("open ")
-            }
-            if (access hasFlag ACC_STATIC) {
-                append("static ")
-            }
-
-            append("fun ")
-            append(name)
-
-            append(Type.getMethodType(desc).formatForReport())
-        }
     }
 }
 
@@ -161,16 +138,17 @@ interface SSGVersionContainer {
 }
 
 interface SSGAlternativeVisibilityContainer : SSGAccess, SSGVersionContainer {
-    var alternativeVisibility: MutableMap<Visibility, Version?>?
+    var alternativeVisibilityState: MutableMap<Visibility, Version?>?
 
-    fun alternativeVisibility() = (alternativeVisibility ?: mutableMapOf()).also { alternativeVisibility = it }
+    val alternativeVisibility
+        get() = ::alternativeVisibilityState.getOrInit { mutableMapOf() }
 }
 
 interface SSGAlternativeModalityContainer : SSGAccess, SSGVersionContainer {
     var alternativeModalityState: MutableMap<Modality, Version?>?
 
     val alternativeModality
-        get() = (alternativeModalityState ?: mutableMapOf()).also { alternativeModalityState = it }
+        get() = ::alternativeModalityState.getOrInit { mutableMapOf() }
 }
 
 interface SSGAccess {

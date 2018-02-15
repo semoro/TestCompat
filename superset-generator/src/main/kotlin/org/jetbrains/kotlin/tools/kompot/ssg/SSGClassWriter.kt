@@ -42,7 +42,7 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
     }
 
     private fun SSGAlternativeVisibilityContainer.writeAlternativeVisibility(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
-        val alternativeVisibility = alternativeVisibility ?: return
+        val alternativeVisibility = alternativeVisibilityState ?: return
         val (visibilities, versions) = alternativeVisibility.toList().filter { it.second != null }.unzip()
         writeAltAnnotation("visibility", visEnumDesc, altVisDesc, getVisitor, visibilities, versions)
     }
@@ -69,12 +69,20 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
     }
 
 
+    var kotlinClasses = 0
 
     fun write(node: SSGClass, classWriter: ClassVisitor) {
 
         classWriter.visit(Opcodes.V1_8, node.access, node.fqName, node.signature, node.superType, node.interfaces)
 
+        if (node.isKotlin) {
+            kotlinClasses++
+        }
+
         classWriter.writeOuterClassInfo(node.ownerInfo)
+        node.innerClassesBySignature?.values?.forEach { ref ->
+            classWriter.visitInnerClass(ref.name, ref.outerName, ref.innerName, ref.access)
+        }
 
         node.writeVersion(classWriter::visitAnnotation)
         node.writeAlternativeVisibility(classWriter::visitAnnotation)
