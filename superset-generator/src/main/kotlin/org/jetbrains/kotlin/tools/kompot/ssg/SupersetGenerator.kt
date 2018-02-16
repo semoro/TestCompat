@@ -7,11 +7,12 @@ import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.slf4j.Logger
 import java.io.File
+import kotlin.system.measureTimeMillis
 
 class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) {
 
     val classesByFqName = mutableMapOf<String, SSGClass>()
-    val merger = SSGMerger(this)
+    val merger = SSGMerger(logger, versionHandler)
 
     fun appendClasses(classes: Sequence<SSGClass>) {
         classes.filter {
@@ -21,9 +22,13 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
         }
     }
 
+    var mergeTime = 0L
+
     fun appendClassNode(node: SSGClass) {
-        classesByFqName[node.fqName]?.let { merger.mergeClasses(it, node) } ?: run {
-            classesByFqName[node.fqName] = node
+        mergeTime += measureTimeMillis {
+            classesByFqName[node.fqName]?.let { merger.mergeClasses(it, node) } ?: run {
+                classesByFqName[node.fqName] = node
+            }
         }
     }
 
@@ -46,16 +51,23 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
         cleanupVersions()
         println(classesByFqName.map { it.value }.filter { it.fqName.startsWith("api") }.joinToString(separator = "\n\n"))
         println("Stats: ")
-        println(merger.formatStatistics())
-        val writer = SSGClassWriter()
-        classesByFqName.values.forEach {
-            val sub = File(outDir, it.fqName + ".class")
-            sub.parentFile.mkdirs()
-            val cw = ClassWriter(COMPUTE_FRAMES or COMPUTE_MAXS)
-            writer.write(it, cw)
-            sub.writeBytes(cw.toByteArray())
-            //println("W: $sub")
+        println(merger.S.formatStatistics())
+        println("Merge time: $mergeTime ms")
+        val writeTime = measureTimeMillis {
+            val writer = SSGClassWriter()
+            classesByFqName.values.forEach {
+                val sub = File(outDir, it.fqName + ".class")
+                sub.parentFile.mkdirs()
+                val cw = ClassWriter(COMPUTE_FRAMES or COMPUTE_MAXS)
+                writer.write(it, cw)
+                sub.writeBytes(cw.toByteArray())
+                logger.debug("W: $sub")
+            }
         }
+        println("Write time: $writeTime ms")
+
+
+
 
     }
 }

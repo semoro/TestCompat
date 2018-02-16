@@ -80,6 +80,9 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         }
 
         classWriter.writeOuterClassInfo(node.ownerInfo)
+        node.annotations?.forEach {
+            it.accept(classWriter.visitAnnotation(it.desc, true))
+        }
         node.innerClassesBySignature?.values?.forEach { ref ->
             classWriter.visitInnerClass(ref.name, ref.outerName, ref.innerName, ref.access)
         }

@@ -3,13 +3,16 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
+import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.classKindMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentAnnotationsWithSameDesc
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.kotlinMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
+import org.slf4j.Logger
 
 
 fun Int.sameMasked(other: Int, mask: Int): Boolean = (this and mask) == (other and mask)
@@ -30,41 +33,12 @@ fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(
 )
 
 
-class SSGMerger(val generator: SupersetGenerator) {
+class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
-    operator fun Version?.plus(other: Version?) = generator.versionHandler.plus(this, other)
-    operator fun Version?.contains(other: Version?) = generator.versionHandler.contains(this, other)
+    operator fun Version?.plus(other: Version?) = versionHandler.plus(this, other)
+    operator fun Version?.contains(other: Version?) = versionHandler.contains(this, other)
 
-    val Classes = object : MergeProtectionScope<SSGClass>("Classes") {
-        override fun onFail(mfe: MergeFailedException, a: SSGClass, b: SSGClass) {
-            generator.logger.error(
-                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Target: $a\n" +
-                        "Source: $b\n"
-            )
-            super.onFail(mfe, a, b)
-        }
-    }
-    val Fields = object : MergeProtectionScope<SSGField>("Fields") {
-        override fun onFail(mfe: MergeFailedException, a: SSGField, b: SSGField) {
-            generator.logger.error(
-                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Target: $a\n" +
-                        "Source: $b\n"
-            )
-            super.onFail(mfe, a, b)
-        }
-    }
-    val Methods = object : MergeProtectionScope<SSGMethod>("Methods") {
-        override fun onFail(mfe: MergeFailedException, a: SSGMethod, b: SSGMethod) {
-            generator.logger.error(
-                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Target: ${a.debugText()}\n" +
-                        "Source: ${b.debugText()}\n"
-            )
-            super.onFail(mfe, a, b)
-        }
-    }
+    val S = MergeScopes(logger)
 
     private fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
         val fqd = sourceField.fqd()
@@ -72,26 +46,27 @@ class SSGMerger(val generator: SupersetGenerator) {
         mergeFields(targetField, sourceField)
     }
 
-    private fun mergeFields(targetField: SSGField, sourceField: SSGField) = tryMerge(Fields, targetField, sourceField) {
-        if (targetField.signature != sourceField.signature) {
-            reportMergeFailure(genericsMismatch, "${targetField.signature} != ${sourceField.desc}")
-        }
+    private fun mergeFields(targetField: SSGField, sourceField: SSGField) =
+        tryMerge(S.fields, targetField, sourceField) {
+            if (targetField.signature != sourceField.signature) {
+                reportMergeFailure(genericsMismatch, "${targetField.signature} != ${sourceField.desc}")
+            }
 
-        if (targetField.modality != sourceField.modality) {
-            reportMergeFailure(fieldModalityMismatch, "$")
-        }
+            if (targetField.modality != sourceField.modality) {
+                reportMergeFailure(fieldModalityMismatch, "$")
+            }
 
-        if (targetField.modality == sourceField.modality) {
-            mergeVisibilities(targetField, sourceField)
+            if (targetField.modality == sourceField.modality) {
+                mergeVisibilities(targetField, sourceField)
 
-            targetField.version = targetField.version + sourceField.version
+                targetField.version = targetField.version + sourceField.version
+            }
         }
-    }
 
     private fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
-        tryMerge(Methods, targetMethod, sourceMethod) {
+        tryMerge(S.methods, targetMethod, sourceMethod) {
             if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
                 reportMergeFailure(methodKindMismatch, "")
             }
@@ -116,14 +91,32 @@ class SSGMerger(val generator: SupersetGenerator) {
             appendField(a, it, b)
         }
 
-        if (b.innerClassesBySignature != null) {
-            val target = a::innerClassesBySignature.getOrInit { mutableMapOf() }
-            b.innerClassesBySignature?.forEach { (signature, value) ->
-                val sameSignatureRef = target[signature]
-                if (sameSignatureRef != null && sameSignatureRef != value) {
-                    generator.logger.error("Different inner classes with same signature: $sameSignatureRef != $value")
+        if (b.annotations != null) {
+            val allAnnotations =
+                ((a.annotations ?: listOf()) + b.annotations!!)
+                    .distinctBy { it.desc to it.values }
+                    .groupBy { it.desc }
+            a.annotations = allAnnotations.mapNotNull { (desc, annotations) ->
+                tryMerge(S.annotations, annotations) {
+                    annotations.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, desc)
                 }
             }
+        }
+
+        if (b.innerClassesBySignature != null) {
+            val target = a::innerClassesBySignature.getOrInit { mutableMapOf() }
+            val allInners =
+                (target.entries + b.innerClassesBySignature!!.entries)
+                    .distinct()
+                    .groupBy({ it.key }, { it.value })
+            a.innerClassesBySignature = mutableMapOf()
+            allInners.forEach { (desc, refs) ->
+                tryMerge(S.innerClassReferences, refs) {
+                    val ref = refs.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, desc)
+                    a.innerClassesBySignature!![desc] = ref
+                }
+            }
+
         }
 
     }
@@ -156,11 +149,11 @@ class SSGMerger(val generator: SupersetGenerator) {
 
     fun mergeClasses(a: SSGClass, b: SSGClass) {
         if (b.version in a.version) {
-            generator.logger.info("Duplicated class ${a.fqName}")
+            logger.info("Duplicated class ${a.fqName}")
             return
         }
 
-        tryMerge(Classes, a, b) {
+        tryMerge(S.classes, a, b) {
             if (a.isKotlin != b.isKotlin) {
                 reportMergeFailure(kotlinMismatch, "Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
             }
@@ -177,12 +170,6 @@ class SSGMerger(val generator: SupersetGenerator) {
             mergeModalities(a, b)
             mergeClassesInternals(a, b)
         }
-    }
-
-    fun formatStatistics(): String = buildString {
-        append(Classes.statistics())
-        append(Fields.statistics())
-        append(Methods.statistics())
     }
 }
 

@@ -20,7 +20,10 @@ class SSGClass(
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
     SSGAlternativeModalityContainer,
-    SSGAccess {
+    SSGAccess,
+    SSGAnnotated {
+
+    override var annotations: List<AnnotationNode>? = null
 
     var isKotlin = false
 
@@ -153,6 +156,14 @@ interface SSGAlternativeModalityContainer : SSGAccess, SSGVersionContainer {
 
 interface SSGAccess {
     var access: Int
+}
+
+interface SSGAnnotated {
+    var annotations: List<AnnotationNode>?
+
+    fun addAnnotation(node: AnnotationNode) {
+        annotations = ::annotations.getOrInit { listOf() } + node
+    }
 }
 
 data class OuterClassInfo(var owner: String, var methodName: String?, var methodDesc: String?)

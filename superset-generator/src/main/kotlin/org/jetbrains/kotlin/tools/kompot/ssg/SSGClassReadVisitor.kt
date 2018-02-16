@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ACC_PRIVATE
+import org.objectweb.asm.tree.AnnotationNode
 
 const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 
@@ -28,15 +29,29 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
     override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
         if (desc == kotlinMetadataDesc) {
             result.isKotlin = true
+            return null
         }
-        return super.visitAnnotation(desc, visible)
+
+        return NullabilityDecoder.visitAnnotation(desc, visible) {}
+                ?: AnnotationNode(desc).also { result.addAnnotation(it) }
     }
 
-    override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int,
+        name: String?,
+        desc: String?,
+        signature: String?,
+        exceptions: Array<String>?
+    ): MethodVisitor? {
         if (access hasFlag ACC_PRIVATE) return null
         val method =
             SSGMethod(access, name!!, desc!!, signature, exceptions, rootVersion)
         return object : MethodVisitor(Opcodes.ASM5) {
+
+            override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
+                return super.visitAnnotation(desc, visible)
+            }
+
             override fun visitEnd() {
                 super.visitEnd()
                 result.addMethod(method)

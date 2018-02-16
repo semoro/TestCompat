@@ -12,17 +12,17 @@ class ClassToIRReader(classFiles: Sequence<Path>, version: Version?) {
             //println("R: $it")
             Files.newInputStream(it)
         }.mapNotNull {
-                try {
-                    ClassReader(it)
-                } catch (e: Throwable) {
-                    //logger.error("Error while reading class", e)
-                    re++
-                    null
-                }
-            }.map {
-                val visitor = SSGClassReadVisitor(version)
-                it.accept(visitor, ClassReader.SKIP_FRAMES)
-                visitor.result
+            try {
+                ClassReader(it)
+            } catch (e: Throwable) {
+                //logger.error("Error while reading class", e)
+                re++
+                null
             }
+        }.map {
+            val visitor = SSGClassReadVisitor(version)
+            it.accept(visitor, ClassReader.SKIP_FRAMES)
+            visitor.result
+        }
 
 }
