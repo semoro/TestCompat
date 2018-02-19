@@ -88,7 +88,7 @@ class MergeScopes(val logger: Logger) {
     val classes = object : MergeProtectionScope<SSGClass>("Classes") {
         override fun onFail(mfe: MergeFailedException, a: SSGClass, b: SSGClass) {
             logger.error(
-                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
+                "Failed to merge classes: ${mfe.key.message}: ${mfe.fmessage}\n" +
                         "Target: $a\n" +
                         "Source: $b\n"
             )
@@ -98,7 +98,7 @@ class MergeScopes(val logger: Logger) {
     val fields = object : MergeProtectionScope<SSGField>("Fields") {
         override fun onFail(mfe: MergeFailedException, a: SSGField, b: SSGField) {
             logger.error(
-                "Failed to merge methods: ${mfe.key.message}: ${mfe.fmessage}\n" +
+                "Failed to merge fields: ${mfe.key.message}: ${mfe.fmessage}\n" +
                         "Target: $a\n" +
                         "Source: $b\n"
             )
@@ -130,7 +130,7 @@ class MergeScopes(val logger: Logger) {
         override fun onFail(mfe: MergeFailedException, multiple: List<SSGInnerClassRef>) {
             logger.error(
                 "Failed to merge inner-class references: ${mfe.key.message} :${mfe.fmessage}\n" +
-                        "Nodes: $multiple"
+                        "Nodes: $multiple\n"
             )
             super.onFail(mfe, multiple)
         }

@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.classKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentAnnotationsWithSameDesc
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentInnersWithSameDesc
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.kotlinMismatch
@@ -49,11 +50,11 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
     private fun mergeFields(targetField: SSGField, sourceField: SSGField) =
         tryMerge(S.fields, targetField, sourceField) {
             if (targetField.signature != sourceField.signature) {
-                reportMergeFailure(genericsMismatch, "${targetField.signature} != ${sourceField.desc}")
+                reportMergeFailure(genericsMismatch, "${targetField.signature} != ${sourceField.signature}")
             }
 
             if (targetField.modality != sourceField.modality) {
-                reportMergeFailure(fieldModalityMismatch, "$")
+                reportMergeFailure(fieldModalityMismatch, "${targetField.modality} != ${sourceField.modality}")
             }
 
             if (targetField.modality == sourceField.modality) {
@@ -112,7 +113,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             a.innerClassesBySignature = mutableMapOf()
             allInners.forEach { (desc, refs) ->
                 tryMerge(S.innerClassReferences, refs) {
-                    val ref = refs.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, desc)
+                    val ref = refs.singleOrNull() ?: reportMergeFailure(differentInnersWithSameDesc, desc)
                     a.innerClassesBySignature!![desc] = ref
                 }
             }
