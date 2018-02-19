@@ -60,11 +60,11 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
 
     private fun MethodVisitor.writeStubBody() {
         visitCode()
-        visitTypeInsn(Opcodes.NEW, "java/lang/Exception")
+        val desc = "java/lang/UnsupportedOperationException"
+        visitTypeInsn(Opcodes.NEW, desc)
         visitInsn(Opcodes.DUP)
         visitLdcInsn("Superset stub body should never be called!")
-        visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Exception", "<init>", "(Ljava/lang/String;)V", false)
-        visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Throwable")
+        visitMethodInsn(Opcodes.INVOKESPECIAL, desc, "<init>", "(Ljava/lang/String;)V", false)
         visitInsn(Opcodes.ATHROW)
     }
 
