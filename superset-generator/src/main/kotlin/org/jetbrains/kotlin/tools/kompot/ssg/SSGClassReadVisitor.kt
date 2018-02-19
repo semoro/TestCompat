@@ -52,6 +52,15 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
                 return super.visitAnnotation(desc, visible)
             }
 
+            override fun visitAnnotationDefault(): AnnotationVisitor {
+                return object : AnnotationNode(Opcodes.ASM6, "") {
+                    override fun visitEnd() {
+                        super.visitEnd()
+                        method.annotationDefaultValue = this
+                    }
+                }
+            }
+
             override fun visitEnd() {
                 super.visitEnd()
                 result.addMethod(method)

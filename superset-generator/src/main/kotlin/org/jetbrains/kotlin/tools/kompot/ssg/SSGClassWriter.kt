@@ -105,6 +105,8 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
                 it.writeVersion(::visitAnnotation)
                 it.writeAlternativeVisibility(::visitAnnotation)
                 it.writeAlternativeModality(::visitAnnotation)
+                it.annotationDefaultValue?.accept(visitAnnotationDefault())
+
                 if (it.access noFlag ACC_ABSTRACT) {
                     if (withBodyStubs) {
                         writeStubBody()

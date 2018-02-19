@@ -129,6 +129,8 @@ class SSGMethod(
     override var alternativeModalityState: MutableMap<Modality, Version?>? = null
     override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
 
+    var annotationDefaultValue: AnnotationNode? = null
+
     fun fqd(): String {
         return name + desc
     }
