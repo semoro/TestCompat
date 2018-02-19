@@ -2,8 +2,8 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
-import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
+import org.objectweb.asm.tree.AnnotationNode
 
 const val VISIBILITY_MASK = ACC_PUBLIC or ACC_PRIVATE or ACC_PUBLIC or ACC_PROTECTED
 const val KIND_MASK = ACC_INTERFACE or ACC_ANNOTATION or ACC_ENUM
@@ -49,3 +49,19 @@ var SSGAccess.modality: Modality
         }
         access = access and (MODALITY_MASK.inv()) or flag
     }
+
+
+fun AnnotationNode.flattenedValues(): List<Any?> {
+    val result = mutableListOf<Any?>()
+    fun Iterable<Any?>.recurse() {
+        for (el in this) {
+            when (el) {
+                is Iterable<*> -> el.recurse()
+                is Array<*> -> el.asIterable().recurse()
+                else -> result += el
+            }
+        }
+    }
+    values?.recurse()
+    return result
+}

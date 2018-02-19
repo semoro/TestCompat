@@ -120,7 +120,7 @@ class MergeScopes(val logger: Logger) {
         override fun onFail(mfe: MergeFailedException, multiple: List<AnnotationNode>) {
             logger.error(
                 "Failed to merge annotations: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Nodes: $multiple\n"
+                        "Nodes: ${multiple.joinToString { it.debugText() }}\n"
             )
             super.onFail(mfe, multiple)
         }

@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.util.TraceClassVisitor
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -41,4 +42,22 @@ fun SSGMethod.debugText(): String {
 
         append(Type.getMethodType(desc).formatForReport())
     }
+}
+
+fun AnnotationNode.debugText(): String {
+
+    fun Any?.recurse(): String {
+        return when (this) {
+            is AnnotationNode -> values.chunked(2) { (a, b) ->
+                a as String to b
+            }.joinToString(prefix = "$desc(", postfix = ")") { (k, v) ->
+                "$k = ${v.recurse()}"
+            }
+            is Array<*> -> this.joinToString(prefix = "{", postfix = "}") { it.recurse() }
+            is List<*> -> this.joinToString(prefix = "[", postfix = "]") { it.recurse() }
+            else -> toString()
+        }
+    }
+
+    return recurse()
 }

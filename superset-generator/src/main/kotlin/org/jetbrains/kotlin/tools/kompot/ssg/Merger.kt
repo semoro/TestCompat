@@ -95,11 +95,11 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
         if (b.annotations != null) {
             val allAnnotations =
                 ((a.annotations ?: listOf()) + b.annotations!!)
-                    .distinctBy { it.desc to it.values }
                     .groupBy { it.desc }
-            a.annotations = allAnnotations.mapNotNull { (desc, annotations) ->
+            a.annotations = allAnnotations.mapNotNull { (desc, sameDescAnnotations) ->
+                val annotations = sameDescAnnotations.distinctBy { it.flattenedValues() }
                 tryMerge(S.annotations, annotations) {
-                    annotations.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, desc)
+                    annotations.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, "$desc in ${a.fqName}")
                 }
             }
         }
