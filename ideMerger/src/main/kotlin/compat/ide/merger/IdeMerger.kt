@@ -17,9 +17,18 @@ import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.ssg.SSGClassReadVisitor
 import org.jetbrains.kotlin.tools.kompot.ssg.SupersetGenerator
 import org.jetbrains.kotlin.tools.kompot.ssg.visibility
+import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
+
+class SupersetGeneratorProvider(private val factory: () -> SupersetGenerator) {
+    val all = mutableMapOf<File, SupersetGenerator>()
+
+    operator fun get(target: File): SupersetGenerator {
+        return all.getOrPut(target, factory)
+    }
+}
 
 fun main(args: Array<String>) {
     val paths = args.map { Paths.get(it) }
@@ -33,16 +42,22 @@ fun main(args: Array<String>) {
     val outputPath = paths.last()
 
     val versionHandler = IdeMergedVersionHandler()
-    val supersetGenerator =
-        SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler)
+
+    val provider = SupersetGeneratorProvider { SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler) }
 
     for (idePath in idePaths) {
-        appendIde(supersetGenerator, idePath)
+        appendIde(provider, idePath)
     }
-    supersetGenerator.doOutput(outputPath.toFile())
+
+    val outputDirFile = outputPath.toFile()
+
+    provider.all.forEach { (file, superset) ->
+        info("Writing $file")
+        superset.doOutput(outputDirFile.resolve(file))
+    }
 }
 
-private fun appendIde(supersetGenerator: SupersetGenerator, idePath: Path) {
+private fun appendIde(supersetGeneratorProvider: SupersetGeneratorProvider, idePath: Path) {
     info("Reading classes of IDE $idePath")
     val ide = IdeManager.createManager().createIde(idePath.toFile())
     createIdeResolver(ide).use { ideResolver ->
@@ -50,10 +65,18 @@ private fun appendIde(supersetGenerator: SupersetGenerator, idePath: Path) {
         info("Reading bundled plugins classes")
         val bundledPluginsClassesLocations = readBundledPluginsClassesLocations(ide)
         try {
-            val pluginsResolvers = bundledPluginsClassesLocations
-                    .map { it.getPluginClassesResolver() }
-                    .let { UnionResolver.create(it) }
-            appendIdeAndBundledPlugins(supersetGenerator, ideResolver, pluginsResolvers, ideMergedVersion)
+            appendResolver(supersetGeneratorProvider[File("./libClasses")], ideResolver, ideMergedVersion)
+            val pluginsDir = File("plugins")
+            for (pluginClassesLocations in bundledPluginsClassesLocations) {
+                val plugin = pluginClassesLocations.idePlugin
+                val pluginName = plugin.originalFile?.nameWithoutExtension ?: plugin.pluginId ?: plugin.pluginName
+                ?: error("Failed to acknowledge plugin name")
+                appendResolver(
+                    supersetGeneratorProvider[pluginsDir.resolve(pluginName).resolve("libClasses")],
+                    pluginClassesLocations.getPluginClassesResolver(),
+                    ideMergedVersion
+                )
+            }
         } finally {
             bundledPluginsClassesLocations.forEach { it.closeLogged() }
         }
@@ -68,12 +91,14 @@ private fun info(s: String) = println(s)
  * Processes all the class files contained in the IDE and its bundled plugins
  * and merges them with the [supersetGenerator].
  */
-private fun appendIdeAndBundledPlugins(supersetGenerator: SupersetGenerator,
-                                       ideResolver: Resolver,
-                                       pluginsResolver: Resolver,
-                                       ideMergedVersion: IdeMergedVersion) {
-    val unionResolver = UnionResolver.create(listOf(ideResolver, pluginsResolver))
-    unionResolver.processAllClasses { classNode ->
+private fun appendResolver(
+    supersetGenerator: SupersetGenerator,
+    resolver: Resolver,
+    ideMergedVersion: IdeMergedVersion
+) {
+    resolver.processAllClasses { classNode ->
+        if (classNode.name.startsWith("kotlin")) return@processAllClasses true
+
         val visitor = SSGClassReadVisitor(ideMergedVersion)
         classNode.accept(visitor)
         val result = visitor.result
@@ -104,7 +129,7 @@ private val pluginClassesLocationsKeys = IdePluginClassesFinder.MAIN_CLASSES_KEY
  * one resolver.
  */
 private fun IdePluginClassesLocations.getPluginClassesResolver(): Resolver =
-        pluginClassesLocationsKeys.mapNotNull { getResolver(it) }.let { UnionResolver.create(it) }
+    pluginClassesLocationsKeys.mapNotNull { getResolver(it) }.let { UnionResolver.create(it) }
 
 /**
  * Finds class files of all plugins bundled into the [ide].
@@ -114,11 +139,15 @@ private fun IdePluginClassesLocations.getPluginClassesResolver(): Resolver =
  * plugins might have been extracted to a temporary directory.
  */
 private fun readBundledPluginsClassesLocations(ide: Ide): List<IdePluginClassesLocations> =
-        ide.bundledPlugins.mapNotNull { safeFindPluginClasses(ide, it) }
+    ide.bundledPlugins.mapNotNull { safeFindPluginClasses(ide, it) }
 
 private fun safeFindPluginClasses(ide: Ide, idePlugin: IdePlugin) = try {
-    info("Reading class files of a plugin $idePlugin bundled into $ide")
-    IdePluginClassesFinder.findPluginClasses(idePlugin, pluginClassesLocationsKeys)
+    if (idePlugin.pluginId != "org.jetbrains.kotlin") {
+        info("Reading class files of a plugin $idePlugin bundled into $ide")
+        IdePluginClassesFinder.findPluginClasses(idePlugin, pluginClassesLocationsKeys)
+    } else {
+        null
+    }
 } catch (e: Exception) {
     info("Unable to read class files of a bundled plugin $idePlugin: ${e.message}")
     null
