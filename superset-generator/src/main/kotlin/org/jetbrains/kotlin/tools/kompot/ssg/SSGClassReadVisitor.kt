@@ -84,7 +84,6 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
 
     override fun visitInnerClass(name: String, outerName: String?, innerName: String?, access: Int) {
         super.visitInnerClass(name, outerName, innerName, access)
-        if (access hasFlag ACC_PRIVATE) return
 
         val innerClassesBySignature = result::innerClassesBySignature.getOrInit { mutableMapOf() }
         innerClassesBySignature[name] = SSGInnerClassRef(access, name, outerName, innerName)
