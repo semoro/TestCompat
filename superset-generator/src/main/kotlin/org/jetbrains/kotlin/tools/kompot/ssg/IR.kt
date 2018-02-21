@@ -83,7 +83,12 @@ class SSGField(
 ) : SSGNode<SSGField>,
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
-    SSGAccess {
+    SSGAccess,
+    SSGNullabilityContainer,
+    SSGAnnotated {
+
+    override var annotations: List<AnnotationNode>? = null
+    override var nullability: Nullability = Nullability.DEFAULT
 
     override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
 
@@ -124,7 +129,12 @@ class SSGMethod(
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
     SSGAlternativeModalityContainer,
-    SSGAccess {
+    SSGAccess,
+    SSGNullabilityContainer,
+    SSGAnnotated {
+
+    override var annotations: List<AnnotationNode>? = null
+    override var nullability: Nullability = Nullability.DEFAULT
 
     override var alternativeModalityState: MutableMap<Modality, Version?>? = null
     override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
@@ -166,6 +176,10 @@ interface SSGAnnotated {
     fun addAnnotation(node: AnnotationNode) {
         annotations = ::annotations.getOrInit { listOf() } + node
     }
+}
+
+interface SSGNullabilityContainer {
+    var nullability: Nullability
 }
 
 data class OuterClassInfo(var owner: String, var methodName: String?, var methodDesc: String?)

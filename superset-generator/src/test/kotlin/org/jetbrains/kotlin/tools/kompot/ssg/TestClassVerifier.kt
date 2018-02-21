@@ -8,26 +8,24 @@ import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 
-class TestClassVerifier(val skipCode: Boolean = true) {
+class TestClassVerifier(private val skipCode: Boolean = true) {
 
-    fun verifyOut(actualOutputDir: File, testDataDir: File) {
-        actualOutputDir.walkTopDown().filter { it.extension == "class" }.forEach { file ->
-            val sw = StringWriter()
-            PrintWriter(sw).use {
-                val visitor = TraceClassVisitor(it)
-                file.inputStream().use {
-                    val reader = ClassReader(it)
-                    var flags = ClassReader.SKIP_FRAMES
-                    if (skipCode) {
-                        flags = flags or ClassReader.SKIP_CODE
-                    }
-                    reader.accept(visitor, flags)
+    fun verifyOut(actualOutputDir: File, actualFile: File, testDataDir: File) {
+        val sw = StringWriter()
+        PrintWriter(sw).use {
+            val visitor = TraceClassVisitor(it)
+            actualFile.inputStream().use {
+                val reader = ClassReader(it)
+                var flags = ClassReader.SKIP_FRAMES
+                if (skipCode) {
+                    flags = flags or ClassReader.SKIP_CODE
                 }
+                reader.accept(visitor, flags)
             }
-            val s = sw.toString()
-
-            val expectedFile = testDataDir.resolve(file.relativeTo(actualOutputDir)).appendToName(".txt")
-            assertEqualsIgnoringSeparators(expectedFile, s)
         }
+        val s = sw.toString()
+
+        val expectedFile = testDataDir.resolve(actualFile.relativeTo(actualOutputDir)).appendToName(".txt")
+        assertEqualsIgnoringSeparators(expectedFile, s)
     }
 }

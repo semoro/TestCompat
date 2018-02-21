@@ -13,28 +13,23 @@ val SourceSet.kotlin: SourceDirectorySet
 fun SourceSet.kotlin(action: SourceDirectorySet.() -> Unit) =
     kotlin.action()
 
-interface SSB {
-    fun withJava()
-    fun withKotlin()
+class SSB(val sourceSet: SourceSet, val name: String) {
+    fun withJava() {
+        sourceSet.java {
+            srcDir("src/$name/java")
+        }
+    }
+
+    fun withKotlin() {
+    }
 }
 
 fun configureTestSet(p: String, l: SSB.() -> Unit) {
     the<JavaPluginConvention>().sourceSets {
-        val sourceSet = maybeCreate(p).apply {
-            object : SSB {
-                override fun withJava() {
-                    java {
-                        srcDir("src/$p/java")
-                    }
-                }
-
-                override fun withKotlin() {
-                    kotlin {
-                        srcDir("src/$p/kotlin")
-                    }
-                }
-            }.l()
+        val sourceSet = maybeCreate(p).also {
+            SSB(it, p).l()
         }
+        sourceSet.compileClasspath += configurations["compile"]
 
         val jarTask = task("jar${p.capitalize()}", Jar::class) {
             version = ""
@@ -43,10 +38,12 @@ fun configureTestSet(p: String, l: SSB.() -> Unit) {
         }
         tasks.getByName("jar").dependsOn(jarTask)
     }
-
-
 }
 
+dependencies {
+    val compile by configurations
+    compile("org.jetbrains:annotations:13.0")
+}
 
 
 configureTestSet("testSimple1") {

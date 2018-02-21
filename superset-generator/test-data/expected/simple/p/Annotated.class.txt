@@ -1,0 +1,17 @@
+// class version 52.0 (52)
+// access flags 0x21
+public class p/Annotated {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1, 2")
+
+  // access flags 0x1
+  public <init>()V
+
+  // access flags 0x1
+  public one()V
+  @Lp/MyAnnotation;(value="same")
+
+  // access flags 0x1
+  public different()V
+}

@@ -53,6 +53,18 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         writeAltAnnotation("modality", modEnumDesc, altModDesc, getVisitor, modalities, versions)
     }
 
+    private fun SSGNullabilityContainer.writeNullability(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
+        val nullability = nullability
+        val desc = when(nullability) {
+            Nullability.NOT_NULL -> notNullDesc
+            Nullability.NULLABLE -> nullableDesc
+            else -> return
+        }
+        getVisitor(desc, true)?.apply {
+            visitEnd()
+        }
+    }
+
     private fun ClassVisitor.writeOuterClassInfo(info: OuterClassInfo?) {
         if (info == null) return
         visitOuterClass(info.owner, info.methodName, info.methodDesc)
@@ -80,9 +92,7 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         }
 
         classWriter.writeOuterClassInfo(node.ownerInfo)
-        node.annotations?.forEach {
-            it.accept(classWriter.visitAnnotation(it.desc, true))
-        }
+        node.writeAnnotations(classWriter::visitAnnotation)
         node.innerClassesBySignature?.values?.forEach { ref ->
             classWriter.visitInnerClass(ref.name, ref.outerName, ref.innerName, ref.access)
         }
@@ -95,6 +105,8 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
             classWriter.visitField(it.access, it.name, it.desc, it.signature, it.value)?.apply {
                 it.writeVersion(::visitAnnotation)
                 it.writeAlternativeVisibility(::visitAnnotation)
+                it.writeNullability(::visitAnnotation)
+                it.writeAnnotations(::visitAnnotation)
 
                 visitEnd()
             }
@@ -105,6 +117,9 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
                 it.writeVersion(::visitAnnotation)
                 it.writeAlternativeVisibility(::visitAnnotation)
                 it.writeAlternativeModality(::visitAnnotation)
+                it.writeNullability(::visitAnnotation)
+                it.writeAnnotations(::visitAnnotation)
+
                 it.annotationDefaultValue?.accept(visitAnnotationDefault())
 
                 if (it.access noFlag ACC_ABSTRACT) {
@@ -124,5 +139,13 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         }
 
         classWriter.visitEnd()
+    }
+
+    private fun SSGAnnotated.writeAnnotations(
+        getVisitor: (String, Boolean) -> AnnotationVisitor?
+    ) {
+        annotations?.forEach {
+            it.accept(getVisitor(it.desc, true))
+        }
     }
 }

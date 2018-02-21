@@ -32,8 +32,7 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
             return null
         }
 
-        return NullabilityDecoder.visitAnnotation(desc, visible) {}
-                ?: AnnotationNode(desc).also { result.addAnnotation(it) }
+        return readAnnotation(desc, result)
     }
 
     override fun visitMethod(
@@ -49,7 +48,21 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
         return object : MethodVisitor(Opcodes.ASM5) {
 
             override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
-                return super.visitAnnotation(desc, visible)
+                return NullabilityDecoder.visitAnnotation(desc, visible, method)
+                        ?: readAnnotation(desc, method)
+                        ?: super.visitAnnotation(desc, visible)
+            }
+
+            var parameterPosition = 0
+
+            override fun visitParameter(name: String?, access: Int) {
+
+                parameterPosition++
+                super.visitParameter(name, access)
+            }
+
+            override fun visitParameterAnnotation(parameter: Int, desc: String?, visible: Boolean): AnnotationVisitor? {
+                return super.visitParameterAnnotation(parameter, desc, visible)
             }
 
             override fun visitAnnotationDefault(): AnnotationVisitor {
@@ -74,6 +87,13 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
             SSGField(access, name!!, desc!!, signature, value, rootVersion)
 
         return object : FieldVisitor(Opcodes.ASM5) {
+
+            override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
+                return NullabilityDecoder.visitAnnotation(desc, visible, field)
+                        ?: readAnnotation(desc, field)
+                        ?: super.visitAnnotation(desc, visible)
+            }
+
             override fun visitEnd() {
                 super.visitEnd()
                 result.addField(field)
@@ -93,5 +113,9 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
     override fun visitOuterClass(owner: String, name: String?, desc: String?) {
         super.visitOuterClass(owner, name, desc)
         result.ownerInfo = OuterClassInfo(owner, name, desc)
+    }
+
+    fun readAnnotation(desc: String?, to: SSGAnnotated): AnnotationVisitor? {
+        return AnnotationNode(desc).also { to.addAnnotation(it) }
     }
 }

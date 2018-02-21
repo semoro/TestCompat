@@ -10,7 +10,6 @@ import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentAnnotationsW
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentInnersWithSameDesc
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
-import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.kotlinMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
 import org.slf4j.Logger
@@ -59,6 +58,8 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
             if (targetField.modality == sourceField.modality) {
                 mergeVisibilities(targetField, sourceField)
+                mergeNullability(targetField, sourceField)
+                mergeAnnotations(targetField, sourceField)
 
                 targetField.version = targetField.version + sourceField.version
             }
@@ -78,8 +79,30 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
             mergeModalities(targetMethod, sourceMethod)
             mergeVisibilities(targetMethod, sourceMethod)
+            mergeNullability(targetMethod, sourceMethod)
+            mergeAnnotations(targetMethod, sourceMethod)
 
             targetMethod.version = targetMethod.version + sourceMethod.version
+        }
+    }
+
+    private fun <T : SSGAnnotated> mergeAnnotations(a: T, b: T) {
+        if (b.annotations != null) {
+            val allAnnotations =
+                ((a.annotations ?: listOf()) + b.annotations!!)
+                    .groupBy { it.desc }
+            a.annotations = allAnnotations.mapNotNull { (desc, sameDescAnnotations) ->
+                val annotations = sameDescAnnotations.distinctBy { it.flattenedValues() }
+                tryMerge(S.annotations, annotations) {
+                    annotations.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, desc)
+                }
+            }
+        }
+    }
+
+    private fun <T : SSGNullabilityContainer> mergeNullability(a: T, b: T) {
+        if (a.nullability != b.nullability) {
+            a.nullability = listOf(a.nullability, b.nullability).max()!!
         }
     }
 
@@ -92,17 +115,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             appendField(a, it, b)
         }
 
-        if (b.annotations != null) {
-            val allAnnotations =
-                ((a.annotations ?: listOf()) + b.annotations!!)
-                    .groupBy { it.desc }
-            a.annotations = allAnnotations.mapNotNull { (desc, sameDescAnnotations) ->
-                val annotations = sameDescAnnotations.distinctBy { it.flattenedValues() }
-                tryMerge(S.annotations, annotations) {
-                    annotations.singleOrNull() ?: reportMergeFailure(differentAnnotationsWithSameDesc, "$desc in ${a.fqName}")
-                }
-            }
-        }
+        mergeAnnotations(a, b)
 
         if (b.innerClassesBySignature != null) {
             val target = a::innerClassesBySignature.getOrInit { mutableMapOf() }
@@ -156,7 +169,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
         tryMerge(S.classes, a, b) {
             if (a.isKotlin != b.isKotlin) {
-                reportMergeFailure(kotlinMismatch, "Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
+                //reportMergeFailure(kotlinMismatch, "Kotlin mismatch ${a.isKotlin} != ${b.isKotlin}")
             }
             if (!a.sameKind(b)) {
                 reportMergeFailure(classKindMismatch, "")
