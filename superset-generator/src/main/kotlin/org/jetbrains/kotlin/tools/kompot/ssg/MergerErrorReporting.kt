@@ -89,8 +89,8 @@ class MergeScopes(val logger: Logger) {
         override fun onFail(mfe: MergeFailedException, a: SSGClass, b: SSGClass) {
             logger.error(
                 "Failed to merge classes: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Target: $a\n" +
-                        "Source: $b\n"
+                        "Target: ${a.debugText()}\n" +
+                        "Source: ${b.debugText()}\n"
             )
             super.onFail(mfe, a, b)
         }
@@ -99,8 +99,8 @@ class MergeScopes(val logger: Logger) {
         override fun onFail(mfe: MergeFailedException, a: SSGField, b: SSGField) {
             logger.error(
                 "Failed to merge fields: ${mfe.key.message}: ${mfe.fmessage}\n" +
-                        "Target: $a\n" +
-                        "Source: $b\n"
+                        "Target: ${a.debugText()}\n" +
+                        "Source: ${b.debugText()}\n"
             )
             super.onFail(mfe, a, b)
         }

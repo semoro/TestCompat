@@ -3,10 +3,7 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
-import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
-import org.objectweb.asm.Opcodes.*
-import org.objectweb.asm.Type
 import org.objectweb.asm.tree.AnnotationNode
 
 class SSGClass(
@@ -48,29 +45,6 @@ class SSGClass(
         check(node.fqd() !in methodsBySignature)
         methodsBySignature[node.fqd()] = node
     }
-
-    override fun toString(): String {
-        return buildString {
-            append(version.forDisplay())
-
-            append(access.presentableVisibility + " ")
-
-            if (access hasFlag ACC_FINAL) {
-                append("final ")
-            }
-
-            appendln(access.presentableKind + " $fqName {")
-
-            if (methodsBySignature.isNotEmpty()) {
-                methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n") { it.debugText() }
-            }
-
-            if (fieldsBySignature.isNotEmpty()) {
-                fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
-            }
-            appendln("}")
-        }
-    }
 }
 
 class SSGField(
@@ -93,28 +67,6 @@ class SSGField(
     override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
 
     fun fqd(): String = name + desc
-
-
-    override fun toString(): String {
-        return buildString {
-            append(version.forDisplay())
-
-            append(access.presentableVisibility + " ")
-
-            if (access hasFlag ACC_STATIC) {
-                append("static ")
-            }
-
-            if (access hasFlag ACC_FINAL) {
-                append("var")
-            } else {
-                append("val")
-            }
-
-            append(" $name: ")
-            append(Type.getType(desc).formatForReport())
-        }
-    }
 }
 
 

@@ -44,6 +44,50 @@ fun SSGMethod.debugText(): String {
     }
 }
 
+fun SSGField.debugText(): String {
+    return buildString {
+        append(version.forDisplay())
+
+        append(access.presentableVisibility + " ")
+
+        if (access hasFlag Opcodes.ACC_STATIC) {
+            append("static ")
+        }
+
+        if (access hasFlag Opcodes.ACC_FINAL) {
+            append("var")
+        } else {
+            append("val")
+        }
+
+        append(" $name: ")
+        append(Type.getType(desc).formatForReport())
+    }
+}
+
+fun SSGClass.debugText(): String {
+    return buildString {
+        append(version.forDisplay())
+
+        append(access.presentableVisibility + " ")
+
+        if (access hasFlag Opcodes.ACC_FINAL) {
+            append("final ")
+        }
+
+        appendln(access.presentableKind + " $fqName {")
+
+        if (methodsBySignature.isNotEmpty()) {
+            methodsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n") { it.debugText() }
+        }
+
+        if (fieldsBySignature.isNotEmpty()) {
+            fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
+        }
+        appendln("}")
+    }
+}
+
 fun AnnotationNode.debugText(): String {
 
     fun Any?.recurse(): String {
