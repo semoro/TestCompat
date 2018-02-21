@@ -4,11 +4,12 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ACC_PRIVATE
+import org.objectweb.asm.Opcodes.ACC_STATIC
 import org.objectweb.asm.tree.AnnotationNode
 
 const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 
-class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opcodes.ASM5) {
+class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opcodes.ASM6) {
 
     lateinit var result: SSGClass
 
@@ -45,7 +46,8 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
         if (access hasFlag ACC_PRIVATE) return null
         val method =
             SSGMethod(access, name!!, desc!!, signature, exceptions, rootVersion)
-        return object : MethodVisitor(Opcodes.ASM5) {
+        val parameterCount = Type.getMethodType(desc).argumentTypes.size
+        return object : MethodVisitor(Opcodes.ASM6) {
 
             override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
                 return NullabilityDecoder.visitAnnotation(desc, visible, method)
@@ -54,15 +56,41 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
             }
 
             var parameterPosition = 0
+            val parameterInfoList = arrayOfNulls<SSGParameterInfo>(parameterCount)
+
+
 
             override fun visitParameter(name: String?, access: Int) {
+                val parameterInfo = parameterInfoList.getOrInit(parameterPosition) { SSGParameterInfo(parameterPosition) }
+                parameterInfo.name = name
+                parameterInfo.access = access
 
                 parameterPosition++
                 super.visitParameter(name, access)
             }
 
             override fun visitParameterAnnotation(parameter: Int, desc: String?, visible: Boolean): AnnotationVisitor? {
-                return super.visitParameterAnnotation(parameter, desc, visible)
+                val parameterInfo = parameterInfoList.getOrInit(parameter) { SSGParameterInfo(parameter) }
+                return NullabilityDecoder.visitAnnotation(desc, visible, parameterInfo)
+                        ?: readAnnotation(desc, parameterInfo)
+                        ?: super.visitParameterAnnotation(parameter, desc, visible)
+            }
+
+            override fun visitLocalVariable(
+                name: String?,
+                desc: String?,
+                signature: String?,
+                start: Label?,
+                end: Label?,
+                index: Int
+            ) {
+                val isStatic = method.access hasFlag ACC_STATIC
+                val paramIndex = if (isStatic) index else index - 1
+                if (paramIndex in 0 until parameterCount) {
+                    val info = parameterInfoList.getOrInit(paramIndex) { SSGParameterInfo(paramIndex) }
+                    info.name = name
+                }
+                super.visitLocalVariable(name, desc, signature, start, end, index)
             }
 
             override fun visitAnnotationDefault(): AnnotationVisitor {
@@ -76,6 +104,7 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
 
             override fun visitEnd() {
                 super.visitEnd()
+                method.parameterInfoArray = parameterInfoList
                 result.addMethod(method)
             }
         }
@@ -86,7 +115,7 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
         val field =
             SSGField(access, name!!, desc!!, signature, value, rootVersion)
 
-        return object : FieldVisitor(Opcodes.ASM5) {
+        return object : FieldVisitor(Opcodes.ASM6) {
 
             override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
                 return NullabilityDecoder.visitAnnotation(desc, visible, field)

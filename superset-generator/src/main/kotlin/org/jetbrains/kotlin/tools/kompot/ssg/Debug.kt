@@ -92,10 +92,14 @@ fun AnnotationNode.debugText(): String {
 
     fun Any?.recurse(): String {
         return when (this) {
-            is AnnotationNode -> values.chunked(2) { (a, b) ->
-                a as String to b
-            }.joinToString(prefix = "$desc(", postfix = ")") { (k, v) ->
-                "$k = ${v.recurse()}"
+            is AnnotationNode -> if (values == null) {
+                desc
+            } else {
+                values.chunked(2) { (a, b) ->
+                    a as String to b
+                }.joinToString(prefix = "$desc(", postfix = ")") { (k, v) ->
+                    "$k = ${v.recurse()}"
+                }
             }
             is Array<*> -> this.joinToString(prefix = "{", postfix = "}") { it.recurse() }
             is List<*> -> this.joinToString(prefix = "[", postfix = "]") { it.recurse() }

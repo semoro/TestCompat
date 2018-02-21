@@ -24,4 +24,13 @@ public class WithNullability {
     public String becameNullable() {
         return "";
     }
+
+    public void parameterNullability(@NotNull String param) {
+    }
+
+    public void parameterNullability1(@Nullable String s) {
+    }
+
+    public void parameterNullability2(String s) {
+    }
 }

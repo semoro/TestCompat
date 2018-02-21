@@ -24,6 +24,7 @@ public class p/A {
 
   // access flags 0x1
   public paramDiff(Ljava/lang/String;)V
+    // parameter  s1
   @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
 
   // access flags 0x1
@@ -40,5 +41,7 @@ public class p/A {
 
   // access flags 0x1
   public paramDiff(Ljava/lang/String;Ljava/lang/String;)V
+    // parameter  s1
+    // parameter  s2
   @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
 }

@@ -85,6 +85,8 @@ class SSGMethod(
     SSGNullabilityContainer,
     SSGAnnotated {
 
+    var parameterInfoArray = arrayOfNulls<SSGParameterInfo>(0)
+
     override var annotations: List<AnnotationNode>? = null
     override var nullability: Nullability = Nullability.DEFAULT
 
@@ -96,6 +98,16 @@ class SSGMethod(
     fun fqd(): String {
         return name + desc
     }
+}
+
+class SSGParameterInfo(
+    val number: Int
+) : SSGAnnotated, SSGNullabilityContainer {
+    var access: Int = 0
+    var name: String? = null
+
+    override var annotations: List<AnnotationNode>? = null
+    override var nullability: Nullability = Nullability.DEFAULT
 }
 
 interface SSGNode<T : SSGNode<T>>

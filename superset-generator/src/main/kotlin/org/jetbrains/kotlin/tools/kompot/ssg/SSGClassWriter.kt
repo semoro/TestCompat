@@ -55,7 +55,7 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
 
     private fun SSGNullabilityContainer.writeNullability(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
         val nullability = nullability
-        val desc = when(nullability) {
+        val desc = when (nullability) {
             Nullability.NOT_NULL -> notNullDesc
             Nullability.NULLABLE -> nullableDesc
             else -> return
@@ -114,6 +114,23 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
 
         node.methodsBySignature.values.forEach {
             classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
+
+                if (it.parameterInfoArray.any { it != null && (it.name != null || it.access != 0) }) {
+                    for (parameter in it.parameterInfoArray) {
+                        if (parameter != null) {
+                            visitParameter(parameter.name, parameter.access)
+                        } else {
+                            visitParameter(null, 0)
+                        }
+                    }
+                }
+
+                for (parameter in it.parameterInfoArray) {
+                    parameter ?: continue
+                    parameter.writeNullability { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
+                    parameter.writeAnnotations { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
+                }
+
                 it.writeVersion(::visitAnnotation)
                 it.writeAlternativeVisibility(::visitAnnotation)
                 it.writeAlternativeModality(::visitAnnotation)

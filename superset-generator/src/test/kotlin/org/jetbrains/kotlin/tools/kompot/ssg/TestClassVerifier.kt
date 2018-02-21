@@ -3,6 +3,7 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 import org.jetbrains.kotlin.tools.kompot.test.appendToName
 import org.jetbrains.kotlin.tools.kompot.test.assertEqualsIgnoringSeparators
 import org.objectweb.asm.ClassReader
+import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceClassVisitor
 import java.io.File
 import java.io.PrintWriter

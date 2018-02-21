@@ -22,4 +22,18 @@ public class p/WithNullability {
   // access flags 0x1
   public becameNullable()Ljava/lang/String;
   @Lorg/jetbrains/annotations/Nullable;()
+
+  // access flags 0x1
+  public parameterNullability(Ljava/lang/String;)V
+    // parameter  param
+    @Lorg/jetbrains/annotations/NotNull;() // parameter 0
+
+  // access flags 0x1
+  public parameterNullability1(Ljava/lang/String;)V
+    // parameter  s
+    @Lorg/jetbrains/annotations/Nullable;() // parameter 0
+
+  // access flags 0x1
+  public parameterNullability2(Ljava/lang/String;)V
+    // parameter  s
 }
