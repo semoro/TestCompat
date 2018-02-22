@@ -2,15 +2,13 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.*
-import org.objectweb.asm.AnnotationVisitor
-import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes
+import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ACC_ABSTRACT
+import org.objectweb.asm.Opcodes.ACC_STATIC
 
-class SSGClassWriter(val withBodyStubs: Boolean = true) {
+class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolean = true) {
 
-    fun SSGVersionContainer.writeVersion(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
+    private fun SSGVersionContainer.writeVersion(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
         val version = version ?: return
         getVisitor(existsInDesc, true)?.apply {
             visit("version", version.asLiteralValue())
@@ -70,14 +68,55 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         visitOuterClass(info.owner, info.methodName, info.methodDesc)
     }
 
-    private fun MethodVisitor.writeStubBody() {
+
+    private fun MethodVisitor.writeParameterNamesToLVT(method: SSGMethod, className: String, start: Label, end: Label) {
+        if (!configuration.writeParametersToLVT) return
+        val methodType = Type.getMethodType(method.desc)
+        val thisType = Type.getType(className)
+        val paramsWithType = method.parameterInfoArray.zip(methodType.argumentTypes)
+
+        var index = 0
+
+        if (method.access noFlag ACC_STATIC) {
+            visitLocalVariable("this", thisType.descriptor, null, start, end, index++)
+        }
+
+        for ((parameterInfo, type) in paramsWithType) {
+            visitLocalVariable(parameterInfo?.name ?: "var$index", type.descriptor, null, start, end, index)
+            index++
+        }
+    }
+
+    private fun MethodVisitor.writeStubBody(method: SSGMethod, className: String) {
         visitCode()
         val desc = "java/lang/UnsupportedOperationException"
+
+        val start = Label()
+        visitLabel(start)
+
         visitTypeInsn(Opcodes.NEW, desc)
         visitInsn(Opcodes.DUP)
         visitLdcInsn("Superset stub body should never be called!")
         visitMethodInsn(Opcodes.INVOKESPECIAL, desc, "<init>", "(Ljava/lang/String;)V", false)
         visitInsn(Opcodes.ATHROW)
+
+        val end = Label()
+        visitLabel(end)
+
+        writeParameterNamesToLVT(method, className, start, end)
+    }
+
+    private fun SSGMethod.writeParameters(visitor: MethodVisitor, namedParametersPresent: Boolean) {
+        if (!configuration.writeParameters) return
+        if (namedParametersPresent || parameterInfoArray.any { it != null && it.access != 0 }) {
+            for (parameter in parameterInfoArray) {
+                if (parameter != null) {
+                    visitor.visitParameter(parameter.name, parameter.access)
+                } else {
+                    visitor.visitParameter(null, 0)
+                }
+            }
+        }
     }
 
 
@@ -115,15 +154,9 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
         node.methodsBySignature.values.forEach {
             classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
 
-                if (it.parameterInfoArray.any { it != null && (it.name != null || it.access != 0) }) {
-                    for (parameter in it.parameterInfoArray) {
-                        if (parameter != null) {
-                            visitParameter(parameter.name, parameter.access)
-                        } else {
-                            visitParameter(null, 0)
-                        }
-                    }
-                }
+                val namedParametersPresent = it.parameterInfoArray.any { it?.name != null }
+
+                it.writeParameters(this, namedParametersPresent)
 
                 for (parameter in it.parameterInfoArray) {
                     parameter ?: continue
@@ -141,7 +174,7 @@ class SSGClassWriter(val withBodyStubs: Boolean = true) {
 
                 if (it.access noFlag ACC_ABSTRACT) {
                     if (withBodyStubs) {
-                        writeStubBody()
+                        writeStubBody(it, node.fqName)
                     }
                 }
                 visitMaxs(-1, -1)

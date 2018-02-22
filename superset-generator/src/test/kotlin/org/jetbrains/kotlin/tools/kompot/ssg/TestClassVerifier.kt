@@ -9,9 +9,9 @@ import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 
-class TestClassVerifier(private val skipCode: Boolean = true) {
+class TestClassVerifier {
 
-    fun verifyOut(actualOutputDir: File, actualFile: File, testDataDir: File) {
+    fun verifyOut(actualOutputDir: File, actualFile: File, testDataDir: File, skipCode: Boolean = true) {
         val sw = StringWriter()
         PrintWriter(sw).use {
             val visitor = TraceClassVisitor(it)

@@ -15,6 +15,12 @@ class SimpleSupersetGeneratorTest {
 
         val logger = LoggerFactory.getLogger(SimpleSupersetGeneratorTest::class.java)
 
+        private val configuration = Configuration(
+            writeParameters = true,
+            loadParameterNamesFromLVT = true,
+            writeParametersToLVT = true
+        )
+
         @get:ClassRule
         @JvmStatic
         val tmpDir = TemporaryFolder()
@@ -22,7 +28,7 @@ class SimpleSupersetGeneratorTest {
         @BeforeClass
         @JvmStatic
         fun setup() {
-            val gen = SupersetGenerator(logger, SimpleTestVersionHandler())
+            val gen = SupersetGenerator(logger, SimpleTestVersionHandler(), configuration)
             gen.appendClasses(listOf("testSimple1.jar"), SimpleTestVersion(setOf("1")))
             gen.appendClasses(listOf("testSimple2.jar"), SimpleTestVersion(setOf("2")))
             tmpDir.create()
@@ -31,17 +37,17 @@ class SimpleSupersetGeneratorTest {
 
         fun SupersetGenerator.appendClasses(roots: List<String>, version: Version) {
             val classes = classpathToClassFiles(roots.map { File("test-data/build/libs/$it") })
-            val reader = ClassToIRReader(classes, version)
+            val reader = ClassToIRReader(classes, version, configuration)
             appendClasses(reader.classes)
         }
     }
 
     private val verifier = TestClassVerifier()
 
-    private fun verifyOut(filePath: String) {
+    private fun verifyOut(filePath: String, withBodies: Boolean = false) {
         val testDataDir = File("test-data/expected/simple")
         val actualFile = File(tmpDir.root, filePath)
-        verifier.verifyOut(tmpDir.root, actualFile, testDataDir)
+        verifier.verifyOut(tmpDir.root, actualFile, testDataDir, !withBodies)
     }
 
     @Test
@@ -68,4 +74,10 @@ class SimpleSupersetGeneratorTest {
     fun testNullability() {
         verifyOut("p/WithNullability.class")
     }
+
+    @Test
+    fun testParameterNameToLVT() {
+        verifyOut("p/ParameterNameToLVT.class", withBodies = true)
+    }
+
 }

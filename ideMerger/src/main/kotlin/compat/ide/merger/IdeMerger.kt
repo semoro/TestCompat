@@ -14,6 +14,7 @@ import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesLo
 import com.jetbrains.plugin.structure.intellij.plugin.IdePlugin
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
+import org.jetbrains.kotlin.tools.kompot.ssg.Configuration
 import org.jetbrains.kotlin.tools.kompot.ssg.SSGClassReadVisitor
 import org.jetbrains.kotlin.tools.kompot.ssg.SupersetGenerator
 import org.jetbrains.kotlin.tools.kompot.ssg.visibility
@@ -30,6 +31,8 @@ class SupersetGeneratorProvider(private val factory: () -> SupersetGenerator) {
     }
 }
 
+val configuration = Configuration(loadParameterNamesFromLVT = true, writeParameters = false)
+
 fun main(args: Array<String>) {
     val paths = args.map { Paths.get(it) }
     if (paths.size < 3) {
@@ -43,7 +46,7 @@ fun main(args: Array<String>) {
 
     val versionHandler = IdeMergedVersionHandler()
 
-    val provider = SupersetGeneratorProvider { SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler) }
+    val provider = SupersetGeneratorProvider { SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler, configuration) }
 
     for (idePath in idePaths) {
         appendIde(provider, idePath)
@@ -99,7 +102,7 @@ private fun appendResolver(
     resolver.processAllClasses { classNode ->
         if (classNode.name.startsWith("kotlin")) return@processAllClasses true
 
-        val visitor = SSGClassReadVisitor(ideMergedVersion)
+        val visitor = SSGClassReadVisitor(ideMergedVersion, loadParameterNamesFromLVT = configuration.loadParameterNamesFromLVT)
         classNode.accept(visitor)
         val result = visitor.result
         if (!(result.isMemberClass && result.visibility == Visibility.PACKAGE_PRIVATE)) {

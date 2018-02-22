@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.AnnotationNode
 
 const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 
-class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opcodes.ASM6) {
+class SSGClassReadVisitor(private val rootVersion: Version?, private val loadParameterNamesFromLVT: Boolean = false) : ClassVisitor(Opcodes.ASM6) {
 
     lateinit var result: SSGClass
 
@@ -84,11 +84,13 @@ class SSGClassReadVisitor(private val rootVersion: Version?) : ClassVisitor(Opco
                 end: Label?,
                 index: Int
             ) {
-                val isStatic = method.access hasFlag ACC_STATIC
-                val paramIndex = if (isStatic) index else index - 1
-                if (paramIndex in 0 until parameterCount) {
-                    val info = parameterInfoList.getOrInit(paramIndex) { SSGParameterInfo(paramIndex) }
-                    info.name = name
+                if (loadParameterNamesFromLVT) {
+                    val isStatic = method.access hasFlag ACC_STATIC
+                    val paramIndex = if (isStatic) index else index - 1
+                    if (paramIndex in 0 until parameterCount) {
+                        val info = parameterInfoList.getOrInit(paramIndex) { SSGParameterInfo(paramIndex) }
+                        info.name = name
+                    }
                 }
                 super.visitLocalVariable(name, desc, signature, start, end, index)
             }

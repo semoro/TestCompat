@@ -9,7 +9,7 @@ import org.slf4j.Logger
 import java.io.File
 import kotlin.system.measureTimeMillis
 
-class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) {
+class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler, val configuration: Configuration) {
 
     val classesByFqName = mutableMapOf<String, SSGClass>()
     val merger = SSGMerger(logger, versionHandler)
@@ -54,7 +54,7 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler) 
         println(merger.S.formatStatistics())
         println("Merge time: $mergeTime ms")
         val writeTime = measureTimeMillis {
-            val writer = SSGClassWriter()
+            val writer = SSGClassWriter(configuration)
             classesByFqName.values.forEach {
                 val sub = File(outDir, it.fqName + ".class")
                 sub.parentFile.mkdirs()
