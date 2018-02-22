@@ -84,13 +84,9 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
             for ((i, source) in sourceMethod.parameterInfoArray.withIndex()) {
                 source ?: continue
-                val target = targetMethod.parameterInfoArray[i]
-                if (target == null) {
-                    targetMethod.parameterInfoArray[i] = source
-                } else {
-                    mergeNullability(target, source)
-                    mergeAnnotations(target, source)
-                }
+                val target = targetMethod.parameterInfoArray.getOrInit(i) { SSGParameterInfo(i) }
+                mergeNullability(target, source)
+                mergeAnnotations(target, source)
             }
 
             targetMethod.version = targetMethod.version + sourceMethod.version

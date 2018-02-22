@@ -80,4 +80,9 @@ class SimpleSupersetGeneratorTest {
         verifyOut("p/ParameterNameToLVT.class", withBodies = true)
     }
 
+
+    @Test
+    fun testEmptyParameterMerging() {
+        verifyOut("p/AbstractOne.class")
+    }
 }
