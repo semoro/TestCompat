@@ -13,4 +13,6 @@ include 'buildSrc',
         'gradle-plugin',
         'verifier',
         'ideMerger',
-        'test-helpers'
+        'test-helpers',
+        'idea-plugin'
+

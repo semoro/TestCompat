@@ -1,0 +1,8 @@
+<idea-plugin>
+    <id>org.jetbrains.kotlin.tools.kompot</id>
+    <name>Kompot</name>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <consoleFilterProvider implementation="org.jetbrains.kotlin.tools.kompot.idea.KompotConsoleFilterProvider"/>
+    </extensions>
+</idea-plugin>
