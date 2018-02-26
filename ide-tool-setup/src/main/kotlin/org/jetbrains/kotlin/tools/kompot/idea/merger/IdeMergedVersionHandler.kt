@@ -1,4 +1,4 @@
-package compat.ide.merger
+package org.jetbrains.kotlin.tools.kompot.idea.merger
 
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
@@ -17,8 +17,8 @@ class IdeMergedVersionHandler : VersionHandler {
 
     override fun contains(t: Version?, other: Version?): Boolean {
         return when {
-            t == null -> false
-            other == null -> true
+            t == null -> true
+            other == null -> false
             else -> {
                 (t as IdeMergedVersion).ideVersions.containsAll((other as IdeMergedVersion).ideVersions)
             }

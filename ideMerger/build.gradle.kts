@@ -12,6 +12,7 @@ dependencies {
     compile("org.jetbrains.intellij.plugins:structure-ide-classes:3.19")
     compile("org.jetbrains.intellij.plugins:structure-intellij-classes:3.19")
     compile(project(":superset-generator"))
+    compile(project(":ide-tool-setup"))
 }
 
 
