@@ -1,3 +1,7 @@
+plugins {
+    id("maven-publish")
+}
+
 repositories {
     mavenCentral()
 
@@ -6,13 +10,17 @@ repositories {
     }
 }
 
+
 dependencies {
-    val compile by configurations
-    compile(gradleApi())
     compile("org.jetbrains.intellij.plugins:structure-ide-classes:3.19")
-    compile("org.jetbrains.intellij.plugins:structure-intellij-classes:3.19")
-    compile(project(":superset-generator"))
-    compile(project(":ide-tool-setup"))
+    compile(project(":tool-api"))
 }
 
 
+publishing {
+    publications {
+        val maven by creating(MavenPublication::class) {
+            from(components["java"])
+        }
+    }
+}

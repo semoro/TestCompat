@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionCompareHandler
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionInfoProvider
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
+import org.jetbrains.kotlin.tools.kompot.commons.ScopeMarkersDescriptors.*
 import org.jetbrains.kotlin.tools.kompot.commons.compatibleWithDesc
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
 import org.objectweb.asm.*
@@ -119,7 +120,7 @@ class Verifier(
                 fun getSourceInfo(line: Int = lineNumber): ProblemDescriptor.SourceInfo {
                     return ProblemDescriptor.SourceInfo(
                         "$className.$name${Type.getMethodType(desc).formatForReport()}",
-                        source!!,
+                        source ?: "unknown source",
                         "$line",
                         currentScope
                     )
@@ -127,21 +128,21 @@ class Verifier(
 
                 override fun visitMethodInsn(
                     opcode: Int,
-                    mowner: String?,
-                    mname: String?,
-                    mdesc: String?,
+                    callTargetOwner: String?,
+                    calleeName: String?,
+                    calleeDesc: String?,
                     itf: Boolean
                 ) {
-                    super.visitMethodInsn(opcode, mowner, mname, mdesc, itf)
+                    super.visitMethodInsn(opcode, callTargetOwner, calleeName, calleeDesc, itf)
 
-                    if (mowner == "compat/rt/ScopesKt") {
-                        if (mname == "enterVersionScope") {
+                    if (callTargetOwner == scopeMarkersContainerFqName) {
+                        if (calleeName == enterVersionScopeDesc) {
                             val versionString = traceUpToVersionConst(methodNode.instructions.last)
                                     ?: return println("WARN: Unresolved scope")
                             val vd = parseVersionData(versionString)
                             versionScopes.add(vd)
                             currentScope = vd
-                        } else if (mname == "leaveVersionScope") {
+                        } else if (calleeName == leaveVersionScopeDesc) {
                             versionScopes.remove()
                             currentScope = if (versionScopes.isEmpty()) {
                                 methodLevelVersion ?: classLevelVersion
@@ -150,14 +151,25 @@ class Verifier(
                             }
                         }
                     } else {
-                        val calleeVersionInfo = versionInfoProvider.forMethod("$mowner.$mname $mdesc")
-                        val calleeOwnerType = Type.getObjectType(mowner)
-                        val calleeMethodType = Type.getMethodType(mdesc)
+                        val calleeOwnerType = Type.getObjectType(callTargetOwner)
+                        val calleeOwnerInfo = versionInfoProvider.forClass(calleeOwnerType)
+                        if (currentScope.disallows(calleeOwnerInfo)) {
+                            problemSink(
+                                ProblemDescriptor.TypeReferenceProblem(
+                                    calleeOwnerType,
+                                    calleeOwnerInfo,
+                                    getSourceInfo()
+                                )
+                            )
+                        }
+
+                        val calleeVersionInfo = versionInfoProvider.forMethod("$callTargetOwner.$calleeName $calleeDesc")
+                        val calleeMethodType = Type.getMethodType(calleeDesc)
                         if (currentScope.disallows(calleeVersionInfo)) {
                             problemSink(
                                 ProblemDescriptor.MethodReferenceProblem(
                                     calleeOwnerType,
-                                    mname!!,
+                                    calleeName!!,
                                     calleeMethodType,
                                     calleeVersionInfo,
                                     getSourceInfo()

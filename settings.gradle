@@ -14,5 +14,6 @@ include 'buildSrc',
         'verifier',
         'ideMerger',
         'test-helpers',
+        'ide-tool-setup',
         'idea-plugin'
 

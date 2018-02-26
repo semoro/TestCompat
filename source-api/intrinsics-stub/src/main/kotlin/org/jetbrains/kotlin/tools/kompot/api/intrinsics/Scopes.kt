@@ -1,7 +1,13 @@
 package org.jetbrains.kotlin.tools.kompot.api.intrinsics
 
-fun enterVersionScope(v: String): Boolean {
-    return false
-}
+object ScopeMarkers {
 
-fun leaveVersionScope() {}
+    @JvmStatic
+    fun enterVersionScope(v: String): Boolean {
+        return false
+    }
+
+    @JvmStatic
+    fun leaveVersionScope() {}
+
+}

@@ -7,8 +7,7 @@ import org.jetbrains.kotlin.tools.kompot.commons.compatibleWithDesc
 import org.jetbrains.kotlin.tools.kompot.commons.existsInDesc
 import org.objectweb.asm.*
 
-class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) :
-    VersionInfoProvider {
+class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) : VersionInfoProvider {
 
     override fun forField(fqDescriptor: String): Version? {
         return fieldToVersionInfo[fqDescriptor]
@@ -44,12 +43,25 @@ class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) :
         }
 
         lateinit var classFqName: String
-        override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
+        override fun visit(
+            version: Int,
+            access: Int,
+            name: String?,
+            signature: String?,
+            superName: String?,
+            interfaces: Array<out String>?
+        ) {
             classFqName = name!!
             super.visit(version, access, name, signature, superName, interfaces)
         }
 
-        override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): MethodVisitor? {
+        override fun visitMethod(
+            access: Int,
+            name: String?,
+            desc: String?,
+            signature: String?,
+            exceptions: Array<out String>?
+        ): MethodVisitor? {
             return object : MethodVisitor(Opcodes.ASM5) {
                 override fun visitAnnotation(annotationDesc: String?, visible: Boolean): AnnotationVisitor? {
                     return doVisitAnnotation(annotationDesc) { methodToVersionInfo["$classFqName.$name $desc"] = it }
@@ -58,7 +70,13 @@ class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) :
         }
 
 
-        override fun visitField(access: Int, name: String?, desc: String?, signature: String?, value: Any?): FieldVisitor {
+        override fun visitField(
+            access: Int,
+            name: String?,
+            desc: String?,
+            signature: String?,
+            value: Any?
+        ): FieldVisitor {
             return object : FieldVisitor(Opcodes.ASM5) {
                 override fun visitAnnotation(annotationDesc: String?, visible: Boolean): AnnotationVisitor? {
                     return doVisitAnnotation(annotationDesc) { fieldToVersionInfo["$classFqName.$name $desc"] = it }

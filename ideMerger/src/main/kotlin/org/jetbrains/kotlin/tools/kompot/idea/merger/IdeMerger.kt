@@ -1,6 +1,6 @@
 @file:JvmName("IdeMerger")
 
-package compat.ide.merger
+package org.jetbrains.kotlin.tools.kompot.idea.merger
 
 import com.jetbrains.plugin.structure.base.utils.closeLogged
 import com.jetbrains.plugin.structure.classes.resolvers.Resolver
