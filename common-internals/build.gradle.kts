@@ -1,4 +1,7 @@
 
+plugins {
+    id("maven-publish")
+}
 
 dependencies {
     val compile by configurations
@@ -8,4 +11,13 @@ dependencies {
 
     val compileOnly by configurations
     compileOnly(project(":source-api:intrinsics-stub"))
+}
+
+
+publishing {
+    publications {
+        val maven by creating(MavenPublication::class) {
+            from(components["java"])
+        }
+    }
 }

@@ -1,7 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-group = "org.jetbrains.kotlin"
-version = "1.0-SNAPSHOT"
 
 buildscript {
     var kotlin_version: String by extra
@@ -22,6 +20,9 @@ var kotlin_version: String by extra
 kotlin_version = "1.2.10"
 
 subprojects {
+
+    group = "org.jetbrains.kompot"
+    version = "0.0.1"
 
     apply {
         plugin("kotlin")
