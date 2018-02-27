@@ -1,7 +1,8 @@
-package org.jetbrains.kotlin.tools.kompot.ssg
+package org.jetbrains.kotlin.tools.kompot.test
 
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
+import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
 
 
 class SimpleTestVersion(val s: Set<String>) : Version {
@@ -43,4 +44,11 @@ class SimpleTestVersionHandler() : VersionHandler {
 
         return t.s.containsAll(other.s)
     }
+}
+
+class SimpleTestVersionLoader : VersionLoader {
+    override fun load(literalValue: String): Version {
+        return SimpleTestVersion(literalValue.split(", ").toSet())
+    }
+
 }

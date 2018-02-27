@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.VersionInfoProvider
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
 import org.jetbrains.kotlin.tools.kompot.commons.compatibleWithDesc
 import org.jetbrains.kotlin.tools.kompot.commons.existsInDesc
+import org.jetbrains.kotlin.tools.kompot.commons.readVersionAnnotation
 import org.objectweb.asm.*
 
 class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) : VersionInfoProvider {
@@ -29,17 +30,7 @@ class ClassReadVersionInfoProvider(val versionLoader: VersionLoader) : VersionIn
     private inner class ClassCompatReadVisitor : ClassVisitor(Opcodes.ASM5) {
 
         fun doVisitAnnotation(desc: String?, out: (Version) -> Unit): AnnotationVisitor? {
-            if (desc != existsInDesc && desc != compatibleWithDesc) {
-                return null
-            }
-            return object : AnnotationVisitor(Opcodes.ASM5) {
-                override fun visit(name: String?, value: Any?) {
-                    if (name == "version") {
-                        out(versionLoader.load(value as String))
-                    }
-                    super.visit(name, value)
-                }
-            }
+            return readVersionAnnotation(versionLoader, desc, null, out)
         }
 
         lateinit var classFqName: String

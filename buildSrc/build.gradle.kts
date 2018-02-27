@@ -2,8 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 buildscript {
-    var kotlin_version: String by extra
-    kotlin_version = "1.2.10"
+    val kotlin_version: String by extra
 
     repositories {
         mavenCentral()
@@ -19,8 +18,7 @@ plugins {
     `kotlin-dsl`
 }
 
-var kotlin_version: String by extra
-kotlin_version = "1.2.10"
+val kotlin_version: String by extra
 
 
 apply {
@@ -34,8 +32,9 @@ repositories {
 
 dependencies {
     val compile by configurations
-    compile("org.ow2.asm:asm-all:6.0_BETA")
     compile(gradleApi())
+    compile(kotlin("stdlib-jdk8", kotlin_version))
+    compileOnly(kotlin("gradle-plugin", kotlin_version))
 }
 
 tasks.withType<KotlinCompile> {

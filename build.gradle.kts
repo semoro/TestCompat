@@ -2,8 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 buildscript {
-    var kotlin_version: String by extra
-    kotlin_version = "1.2.10"
+    val kotlin_version: String by extra
 
     repositories {
         mavenCentral()
@@ -16,8 +15,7 @@ buildscript {
 }
 
 
-var kotlin_version: String by extra
-kotlin_version = "1.2.10"
+val kotlin_version: String by extra
 
 subprojects {
 

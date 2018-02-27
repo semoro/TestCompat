@@ -6,7 +6,9 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.VersionInfoProvider
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
 import org.jetbrains.kotlin.tools.kompot.commons.ScopeMarkersDescriptors.*
 import org.jetbrains.kotlin.tools.kompot.commons.compatibleWithDesc
+import org.jetbrains.kotlin.tools.kompot.commons.forClass
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
+import org.jetbrains.kotlin.tools.kompot.commons.traceUpToVersionConst
 import org.objectweb.asm.*
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.LdcInsnNode
@@ -87,21 +89,6 @@ class Verifier(
 
                 var currentScope: Version? = null
 
-                fun traceUpToVersionConst(insnNode: AbstractInsnNode): String? {
-                    val prevNode = insnNode.previous
-                    when {
-                        prevNode is LdcInsnNode -> return prevNode.cst as String
-                        prevNode is VarInsnNode && prevNode.opcode == Opcodes.ALOAD -> {
-                            var node = prevNode.previous
-                            while (node !is VarInsnNode || node.opcode != Opcodes.ASTORE || node.`var` != prevNode.`var`) {
-                                node = node.previous ?: return null
-                            }
-                            return traceUpToVersionConst(node)
-                        }
-                        else -> return traceUpToVersionConst(prevNode)
-                    }
-                }
-
                 override fun visitCode() {
                     currentScope = methodLevelVersion ?: classLevelVersion
                     super.visitCode()
@@ -135,14 +122,14 @@ class Verifier(
                 ) {
                     super.visitMethodInsn(opcode, callTargetOwner, calleeName, calleeDesc, itf)
 
-                    if (callTargetOwner == scopeMarkersContainerFqName) {
-                        if (calleeName == enterVersionScopeDesc) {
+                    if (callTargetOwner == scopeMarkersContainerInternalName) {
+                        if (calleeName == enterVersionScopeName) {
                             val versionString = traceUpToVersionConst(methodNode.instructions.last)
                                     ?: return println("WARN: Unresolved scope")
                             val vd = parseVersionData(versionString)
                             versionScopes.add(vd)
                             currentScope = vd
-                        } else if (calleeName == leaveVersionScopeDesc) {
+                        } else if (calleeName == leaveVersionScopeName) {
                             versionScopes.remove()
                             currentScope = if (versionScopes.isEmpty()) {
                                 methodLevelVersion ?: classLevelVersion
@@ -274,10 +261,6 @@ class Verifier(
     }
 
     val visitor: ClassVisitor = ClassCompatCheckingVisitor { problems += it }
-}
-
-private fun VersionInfoProvider.forClass(type: Type): Version? {
-    return this.forClass(type.className)
 }
 
 fun Version?.formatForReport(ann: String = "@ExistsIn") = "$ann(${this?.asLiteralValue() ?: "*"})"

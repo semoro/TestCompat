@@ -18,4 +18,5 @@ fun ideaRT(): FileTree {
 dependencies {
     val compile by configurations
     compile(ideaRT())
+    compile(project(":common-internals"))
 }
