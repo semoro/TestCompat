@@ -65,32 +65,50 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             }
         }
 
-    private fun appendMethod(to: SSGClass, sourceMethod: SSGMethod, source: SSGClass) {
+    private fun appendMethod(to: SSGClass, sourceMethod: SSGMethodOrGroup, source: SSGClass) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
-        tryMerge(S.methods, targetMethod, sourceMethod) {
-            if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
-                reportMergeFailure(methodKindMismatch, "")
+
+
+        fun mergeInto(targetMethod: SSGMethod, sourceMethod: SSGMethod): Boolean {
+            return tryMerge(S.methods, targetMethod, sourceMethod) {
+                if (!targetMethod.access.sameMasked(sourceMethod.access, METHOD_KIND_MASK)) {
+                    reportMergeFailure(methodKindMismatch, "")
+                }
+
+                if (targetMethod.signature != sourceMethod.signature) {
+                    reportMergeFailure(genericsMismatch, "${targetMethod.signature} != ${sourceMethod.signature}")
+                }
+
+                mergeModalities(targetMethod, sourceMethod)
+                mergeVisibilities(targetMethod, sourceMethod)
+                mergeNullability(targetMethod, sourceMethod)
+                mergeAnnotations(targetMethod, sourceMethod)
+
+                for ((i, source) in sourceMethod.parameterInfoArray.withIndex()) {
+                    source ?: continue
+                    val target = targetMethod.parameterInfoArray.getOrInit(i) { SSGParameterInfo(i) }
+                    mergeNullability(target, source)
+                    mergeAnnotations(target, source)
+                }
+
+                targetMethod.version = targetMethod.version + sourceMethod.version
             }
-
-            if (targetMethod.signature != sourceMethod.signature) {
-                reportMergeFailure(genericsMismatch, "${targetMethod.signature} != ${sourceMethod.signature}")
-            }
-
-            mergeModalities(targetMethod, sourceMethod)
-            mergeVisibilities(targetMethod, sourceMethod)
-            mergeNullability(targetMethod, sourceMethod)
-            mergeAnnotations(targetMethod, sourceMethod)
-
-            for ((i, source) in sourceMethod.parameterInfoArray.withIndex()) {
-                source ?: continue
-                val target = targetMethod.parameterInfoArray.getOrInit(i) { SSGParameterInfo(i) }
-                mergeNullability(target, source)
-                mergeAnnotations(target, source)
-            }
-
-            targetMethod.version = targetMethod.version + sourceMethod.version
         }
+
+        val targets = allMethods(targetMethod)
+
+        val sources = allMethods(sourceMethod)
+
+        val unmerged = sources.filter { source ->
+            targets.none { target -> mergeInto(target, source) }
+        }
+
+        val results = targets + unmerged
+
+        val result: SSGMethodOrGroup = results.singleOrNull() ?: SSGMethodGroup(results)
+
+        to.methodsBySignature[fqd] = result
     }
 
     private fun <T : SSGAnnotated> mergeAnnotations(a: T, b: T) {

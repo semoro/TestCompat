@@ -88,6 +88,15 @@ fun SSGClass.debugText(): String {
     }
 }
 
+fun SSGMethodOrGroup.debugText(): String {
+    return when(this) {
+        is SSGMethod -> debugText()
+        is SSGMethodGroup -> methods.joinToString { it.debugText() }
+        else -> ""
+    }
+}
+
+
 fun AnnotationNode.debugText(): String {
 
     fun Any?.recurse(): String {

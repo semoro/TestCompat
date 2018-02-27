@@ -30,7 +30,7 @@ class SSGClass(
     var innerClassesBySignature: MutableMap<String, SSGInnerClassRef>? = null
     var ownerInfo: OuterClassInfo? = null
 
-    val methodsBySignature = mutableMapOf<String, SSGMethod>()
+    val methodsBySignature = mutableMapOf<String, SSGMethodOrGroup>()
     val fieldsBySignature = mutableMapOf<String, SSGField>()
 
     val isMemberClass: Boolean
@@ -41,7 +41,7 @@ class SSGClass(
         fieldsBySignature[node.fqd()] = node
     }
 
-    fun addMethod(node: SSGMethod) {
+    fun addMethod(node: SSGMethodOrGroup) {
         check(node.fqd() !in methodsBySignature)
         methodsBySignature[node.fqd()] = node
     }
@@ -70,6 +70,16 @@ class SSGField(
 }
 
 
+interface SSGMethodOrGroup {
+    fun fqd(): String
+}
+
+class SSGMethodGroup(val methods: List<SSGMethod> = listOf()): SSGNode<SSGMethodGroup>, SSGMethodOrGroup {
+    override fun fqd(): String {
+        return methods.first().fqd()
+    }
+}
+
 class SSGMethod(
     override var access: Int,
     var name: String,
@@ -83,7 +93,8 @@ class SSGMethod(
     SSGAlternativeModalityContainer,
     SSGAccess,
     SSGNullabilityContainer,
-    SSGAnnotated {
+    SSGAnnotated,
+    SSGMethodOrGroup {
 
     var parameterInfoArray = arrayOfNulls<SSGParameterInfo>(0)
 
@@ -95,7 +106,7 @@ class SSGMethod(
 
     var annotationDefaultValue: AnnotationNode? = null
 
-    fun fqd(): String {
+    override fun fqd(): String {
         return name + desc
     }
 }
@@ -154,3 +165,12 @@ data class SSGInnerClassRef(
     var outerName: String?,
     var innerName: String?
 ) : SSGAccess
+
+
+fun allMethods(methodOrGroup: SSGMethodOrGroup): List<SSGMethod> {
+    return when (methodOrGroup) {
+        is SSGMethod -> listOf(methodOrGroup)
+        is SSGMethodGroup -> methodOrGroup.methods
+        else -> emptyList()
+    }
+}
