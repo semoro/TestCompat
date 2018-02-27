@@ -61,12 +61,14 @@ fun MergeProtectionScope<*>.statistics(): String {
     """.trimMargin()
 }
 
-inline fun <T> SSGMerger.tryMerge(scope: MergeProtectionScope<T>, a: T, b: T, l: () -> Unit) {
-    try {
+inline fun <T> SSGMerger.tryMerge(scope: MergeProtectionScope<T>, a: T, b: T, l: () -> Unit): Boolean {
+    return try {
         l()
         scope.success++
+        true
     } catch (mfe: MergeFailedException) {
         scope.onFail(mfe, a, b)
+        false
     }
 }
 

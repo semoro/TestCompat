@@ -152,33 +152,38 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
         }
 
         node.methodsBySignature.values.forEach {
-            classWriter.visitMethod(it.access, it.name, it.desc, it.signature, it.exceptions)?.apply {
+            val allMethods = allMethods(it)
 
-                val namedParametersPresent = it.parameterInfoArray.any { it?.name != null }
+            allMethods.forEachIndexed { index, method ->
+                val namePostfix = if(allMethods.size > 1) "\$V$index" else ""
+                classWriter.visitMethod(method.access, method.name + namePostfix, method.desc, method.signature, method.exceptions)?.apply {
 
-                it.writeParameters(this, namedParametersPresent)
+                    val namedParametersPresent = method.parameterInfoArray.any { it?.name != null }
 
-                for (parameter in it.parameterInfoArray) {
-                    parameter ?: continue
-                    parameter.writeNullability { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
-                    parameter.writeAnnotations { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
-                }
+                    method.writeParameters(this, namedParametersPresent)
 
-                it.writeVersion(::visitAnnotation)
-                it.writeAlternativeVisibility(::visitAnnotation)
-                it.writeAlternativeModality(::visitAnnotation)
-                it.writeNullability(::visitAnnotation)
-                it.writeAnnotations(::visitAnnotation)
-
-                it.annotationDefaultValue?.accept(visitAnnotationDefault())
-
-                if (it.access noFlag ACC_ABSTRACT) {
-                    if (withBodyStubs) {
-                        writeStubBody(it, node.fqName)
+                    for (parameter in method.parameterInfoArray) {
+                        parameter ?: continue
+                        parameter.writeNullability { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
+                        parameter.writeAnnotations { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
                     }
+
+                    method.writeVersion(::visitAnnotation)
+                    method.writeAlternativeVisibility(::visitAnnotation)
+                    method.writeAlternativeModality(::visitAnnotation)
+                    method.writeNullability(::visitAnnotation)
+                    method.writeAnnotations(::visitAnnotation)
+
+                    method.annotationDefaultValue?.accept(visitAnnotationDefault())
+
+                    if (method.access noFlag ACC_ABSTRACT) {
+                        if (withBodyStubs) {
+                            writeStubBody(method, node.fqName)
+                        }
+                    }
+                    visitMaxs(-1, -1)
+                    visitEnd()
                 }
-                visitMaxs(-1, -1)
-                visitEnd()
             }
         }
 

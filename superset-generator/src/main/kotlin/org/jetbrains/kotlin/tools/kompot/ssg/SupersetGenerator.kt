@@ -35,7 +35,7 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler, 
     fun cleanupVersions() {
         classesByFqName.values.forEach { clz ->
             clz.methodsBySignature.values.forEach { meth ->
-                if (meth.version == clz.version) {
+                if (meth is SSGMethod && meth.version == clz.version) {
                     meth.version = null
                 }
             }
