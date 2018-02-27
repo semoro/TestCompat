@@ -164,7 +164,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
             into.alternativeModality[intoModality] = into.alternativeModality[intoModality] + into.version
             into.alternativeModality[fromModality] = into.alternativeModality[fromModality] + from.version
-            into.modality = into.alternativeModality.keys.max() ?: Modality.OPEN
+            into.modality = Modality.OPEN
         }
     }
 
