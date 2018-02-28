@@ -82,14 +82,14 @@ fun SSGClass.debugText(): String {
         }
 
         if (fieldsBySignature.isNotEmpty()) {
-            fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n")
+            fieldsBySignature.values.joinTo(this, separator = "\n\t", prefix = "\t", postfix = "\n") { it.debugText() }
         }
         appendln("}")
     }
 }
 
 fun SSGMethodOrGroup.debugText(): String {
-    return when(this) {
+    return when (this) {
         is SSGMethod -> debugText()
         is SSGMethodGroup -> methods.joinToString { it.debugText() }
         else -> ""
