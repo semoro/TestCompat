@@ -4,7 +4,10 @@ import org.jetbrains.kotlin.tools.kompot.api.annotations.Modality
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
-import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
+import org.jetbrains.kotlin.tools.kompot.commons.*
+import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.TypeArgumentWithVariance
+import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.TypeArgumentWithVariance.*
+import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.Unbounded
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.classKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentAnnotationsWithSameDesc
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentInnersWithSameDesc
@@ -12,6 +15,8 @@ import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
+import org.objectweb.asm.signature.SignatureReader
+import org.objectweb.asm.signature.SignatureWriter
 import org.slf4j.Logger
 
 
@@ -65,10 +70,126 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             }
         }
 
+    private fun mergeMethodSignaturesWithErasure(
+        targetMethod: SSGMethod,
+        source: String?,
+        allowDeepMerge: Boolean = false
+    ) {
+
+        val target = targetMethod.signature
+        if (targetMethod.signature == source) return
+        if (target == null || source == null) {
+            targetMethod.signature = null
+            return
+        }
+
+        val tr = SignatureReader(target)
+        val sr = SignatureReader(source)
+
+        val sourceSignature = MethodSignatureNode()
+        sr.accept(sourceSignature)
+
+        val targetSignatureNode = MethodSignatureNode()
+        tr.accept(targetSignatureNode)
+
+        val (sanitizedTargetNode, targetRenameVector) = targetSignatureNode.sanitizeTypeVariables()
+        val (sanitizedSourceNode, sourceRenameVector) = sourceSignature.sanitizeTypeVariables()
+
+        if (sanitizedTargetNode == sanitizedSourceNode) {
+            return /* keep target */
+        }
+
+        if (!allowDeepMerge) reportMergeFailure(genericsMismatch, "non deep check: $target != $source")
+
+        sanitizedTargetNode.returnType = mergeTypeSignatureNodes(
+            sanitizedTargetNode.returnType!!,
+            sanitizedSourceNode.returnType!!
+        ) ?: reportMergeFailure(
+            genericsMismatch,
+            "Failed to merge return type: ${sanitizedTargetNode.returnType} U ${sanitizedSourceNode.returnType}"
+        )
+
+        sanitizedTargetNode.parameterTypes =
+                sanitizedTargetNode.parameterTypes?.zip(sanitizedSourceNode.parameterTypes!!)
+                    ?.map { (a, b) ->
+                        mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
+                            genericsMismatch,
+                            "Failed to merge parameter type: $a U $b"
+                        )
+                    }
+
+        sanitizedTargetNode.exceptionTypes =
+                sanitizedTargetNode.exceptionTypes?.zip(sanitizedSourceNode.exceptionTypes!!)
+                    ?.map { (a, b) ->
+                        mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
+                            genericsMismatch,
+                            "Failed to merge exception type: $a U $b"
+                        )
+                    }
+
+        val compositeRenameVector = sourceRenameVector + targetRenameVector
+
+        sanitizedTargetNode.renameTypeVariables(compositeRenameVector.entries.associate { it.value to it.key })
+
+        val signatureWriter = SignatureWriter()
+        sanitizedTargetNode.accept(signatureWriter)
+        targetMethod.signature = signatureWriter.toString()
+    }
+
+
+    private fun mergeTypeSignatureNodes(a: TypeSignatureNode, b: TypeSignatureNode): TypeSignatureNode? {
+        fun mergeArguments(arguments: List<TypeArgument>): TypeArgument {
+            val (a, b) = arguments.sortedBy { it.priority() }
+
+            return when {
+                a == b -> a
+                a === Unbounded -> a
+                a is TypeArgumentWithVariance && b is TypeArgumentWithVariance && a::class == b::class -> {
+                    val newNode = mergeTypeSignatureNodes(a.node, b.node) ?: return Unbounded
+                    b.copy(node = newNode)
+                }
+                (a is Super || a is Extends) && b is Invariant -> {
+                    a as TypeArgumentWithVariance
+                    if (a.node == b.node) return b
+
+                    val newNode = mergeTypeSignatureNodes(a.node, b.node) ?: return Unbounded
+
+                    b.copy(node = newNode)
+                }
+                else -> Unbounded
+            }
+        }
+        when {
+            a == b -> return a
+            a is TypeSignatureNode.ClassType && b is TypeSignatureNode.ClassType -> {
+                if (a.classTypeName != b.classTypeName) return null
+                if (a.innerName != b.innerName) return null
+
+
+                val aClassArgs = a.classArgs.orEmpty()
+                val bClassArgs = b.classArgs.orEmpty()
+                if (aClassArgs.size != bClassArgs.size) return null
+
+                val aInnerArgs = a.innerArgs.orEmpty()
+                val bInnerArgs = b.innerArgs.orEmpty()
+                if (aInnerArgs.size != bInnerArgs.size) return null
+
+
+                val newClassArgs = aClassArgs.zip(bClassArgs).map { mergeArguments(it.toList()) }.takeIf { it.any() }
+                val newInnerArgs = aInnerArgs.zip(bInnerArgs).map { mergeArguments(it.toList()) }.takeIf { it.any() }
+                return a.copy(classArgs = newClassArgs, innerArgs = newInnerArgs)
+            }
+            a is TypeSignatureNode.ArrayType && b is TypeSignatureNode.ArrayType -> {
+                val newType = mergeTypeSignatureNodes(a.type, b.type) ?: return null
+                return a.copy(type = newType)
+            }
+            else -> return null
+        }
+    }
+
     private fun appendMethod(to: SSGClass, sourceMethod: SSGMethodOrGroup, source: SSGClass) {
         val fqd = sourceMethod.fqd()
         val targetMethod = to.methodsBySignature[fqd] ?: return to.addMethod(sourceMethod)
-
 
         fun mergeInto(targetMethod: SSGMethod, sourceMethod: SSGMethod): Boolean {
             return tryMerge(S.methods, targetMethod, sourceMethod) {
@@ -76,9 +197,13 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
                     reportMergeFailure(methodKindMismatch, "")
                 }
 
-                if (targetMethod.signature != sourceMethod.signature) {
-                    reportMergeFailure(genericsMismatch, "${targetMethod.signature} != ${sourceMethod.signature}")
-                }
+
+                mergeMethodSignaturesWithErasure(
+                    targetMethod,
+                    sourceMethod.signature,
+                    allowDeepMerge = targetMethod.isConstructor
+                )
+
 
                 mergeModalities(targetMethod, sourceMethod)
                 mergeVisibilities(targetMethod, sourceMethod)
@@ -96,9 +221,9 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             }
         }
 
-        val targets = allMethods(targetMethod)
+        val targets = targetMethod.methods
 
-        val sources = allMethods(sourceMethod)
+        val sources = sourceMethod.methods
 
         val unmerged = sources.filter { source ->
             targets.none { target -> mergeInto(target, source) }

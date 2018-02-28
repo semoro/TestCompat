@@ -93,4 +93,9 @@ class SimpleSupersetGeneratorTest {
     fun testEmptyParameterMerging() {
         verifyOut("p/AbstractOne.class")
     }
+
+    @Test
+    fun testTypeParameters() {
+        verifyOut("p/TypeParameters.class")
+    }
 }

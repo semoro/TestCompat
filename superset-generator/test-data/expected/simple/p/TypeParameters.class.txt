@@ -1,0 +1,13 @@
+// class version 52.0 (52)
+// access flags 0x21
+public class p/TypeParameters {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1, 2")
+
+  // access flags 0x1
+  // signature (Ljava/util/List<Ljava/lang/String;>;)V
+  // declaration: void <init>(java.util.List<java.lang.String>)
+  public <init>(Ljava/util/List;)V
+    // parameter  s
+}
