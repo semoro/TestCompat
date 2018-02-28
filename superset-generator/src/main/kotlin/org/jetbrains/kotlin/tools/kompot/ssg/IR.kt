@@ -72,13 +72,16 @@ class SSGField(
 
 interface SSGMethodOrGroup {
     fun fqd(): String
+    val methods: List<SSGMethod>
 }
 
-class SSGMethodGroup(val methods: List<SSGMethod> = listOf()): SSGNode<SSGMethodGroup>, SSGMethodOrGroup {
+class SSGMethodGroup(override val methods: List<SSGMethod> = listOf()): SSGNode<SSGMethodGroup>, SSGMethodOrGroup {
     override fun fqd(): String {
         return methods.first().fqd()
     }
 }
+
+val SSGMethodOrGroup.isConstructor get() = methods.first().name == "<init>"
 
 class SSGMethod(
     override var access: Int,
@@ -95,6 +98,8 @@ class SSGMethod(
     SSGNullabilityContainer,
     SSGAnnotated,
     SSGMethodOrGroup {
+
+    override val methods get() = listOf(this)
 
     var parameterInfoArray = arrayOfNulls<SSGParameterInfo>(0)
 
@@ -165,12 +170,3 @@ data class SSGInnerClassRef(
     var outerName: String?,
     var innerName: String?
 ) : SSGAccess
-
-
-fun allMethods(methodOrGroup: SSGMethodOrGroup): List<SSGMethod> {
-    return when (methodOrGroup) {
-        is SSGMethod -> listOf(methodOrGroup)
-        is SSGMethodGroup -> methodOrGroup.methods
-        else -> emptyList()
-    }
-}

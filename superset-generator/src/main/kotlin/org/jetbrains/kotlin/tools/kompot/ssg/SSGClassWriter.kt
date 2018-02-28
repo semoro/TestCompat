@@ -152,7 +152,7 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
         }
 
         node.methodsBySignature.values.forEach {
-            val allMethods = allMethods(it)
+            val allMethods = it.methods
 
             allMethods.forEachIndexed { index, method ->
                 val namePostfix = if(allMethods.size > 1) "\$V$index" else ""

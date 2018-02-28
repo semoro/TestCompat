@@ -155,7 +155,18 @@ sealed class TypeArgument {
             is Invariant -> node.accept(sv.visitTypeArgument(SignatureVisitor.INSTANCEOF))
         }
     }
+
+    fun priority(): Int {
+        return when(this) {
+            is Unbounded -> 0
+            is Extends -> 1
+            is Super -> 2
+            is Invariant -> 3
+        }
+    }
 }
+
+
 
 sealed class TypeSignatureNode {
     data class ArrayType(val type: TypeSignatureNode) : TypeSignatureNode()
@@ -295,7 +306,7 @@ private class TypeVariableRemappingContext(val renameVector: Map<String, String>
     fun TypeSignatureNode.remapTypeVariables(): TypeSignatureNode? {
         when (this) {
             is TypeSignatureNode.TypeVariable -> {
-                return TypeSignatureNode.TypeVariable(renameVector[name]!!)
+                return renameVector[name]?.let { TypeSignatureNode.TypeVariable(it) }
             }
             is TypeSignatureNode.ClassType -> {
                 val newClassArgs = classArgs.remapArguments()
@@ -314,28 +325,39 @@ private class TypeVariableRemappingContext(val renameVector: Map<String, String>
 
     fun List<TypeSignatureNode>?.remapFully() = this?.map { it.remapOrOld() }
     fun List<TypeArgument>?.remapArguments() = this?.map { it.remapTypeVariables() ?: it }
-    fun <T: TypeSignatureNode?> T.remapOrOld(): T = (this?.remapTypeVariables() ?: this) as T
+    fun <T : TypeSignatureNode?> T.remapOrOld(): T = (this?.remapTypeVariables() ?: this) as T
 }
 
-fun MethodSignatureNode.sanitizeTypeVariables(): MethodSignatureNode {
+fun MethodSignatureNode.sanitizeTypeVariables(): Pair<MethodSignatureNode, Map<String, String>> {
+    if (typeVariables == null || typeVariables!!.isEmpty()) return this to emptyMap()
+
     val renameVector = mutableMapOf<String, String>()
     typeVariables?.forEachIndexed { index, typeVariable ->
         val newName = "TP$index"
         renameVector[typeVariable.name] = newName
     }
 
-    return with(TypeVariableRemappingContext(renameVector)) {
-        val newNode = MethodSignatureNode()
-        newNode.typeVariables = typeVariables?.map { oldVariable ->
+    val newNode = MethodSignatureNode()
+    newNode.typeVariables = typeVariables
+    newNode.returnType = returnType
+    newNode.parameterTypes = parameterTypes
+    newNode.exceptionTypes = exceptionTypes
+
+    newNode.renameTypeVariables(renameVector)
+
+    return newNode to renameVector
+}
+
+fun MethodSignatureNode.renameTypeVariables(renameVector: Map<String, String>) {
+    with(TypeVariableRemappingContext(renameVector)) {
+        typeVariables = typeVariables?.map { oldVariable ->
             TypeVariable(renameVector[oldVariable.name]!!).also {
                 it.classBound = oldVariable.classBound.remapOrOld()
                 it.interfaceBounds = oldVariable.interfaceBounds.remapFully()
             }
         }
-        newNode.returnType = returnType.remapOrOld()
-        newNode.parameterTypes = parameterTypes.remapFully()
-        newNode.exceptionTypes = exceptionTypes.remapFully()
-
-        newNode
+        returnType = returnType.remapOrOld()
+        parameterTypes = parameterTypes.remapFully()
+        exceptionTypes = exceptionTypes.remapFully()
     }
 }
