@@ -6,8 +6,32 @@ public class p/TypeParameters {
   @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1, 2")
 
   // access flags 0x1
-  // signature (Ljava/util/List<Ljava/lang/String;>;)V
-  // declaration: void <init>(java.util.List<java.lang.String>)
+  // signature (Ljava/util/List<*>;)V
+  // declaration: void <init>(java.util.List<?>)
   public <init>(Ljava/util/List;)V
     // parameter  s
+
+  // access flags 0x1
+  // signature (Ljava/util/List<-Ljava/lang/String;>;I)V
+  // declaration: void <init>(java.util.List<? super java.lang.String>, int)
+  public <init>(Ljava/util/List;I)V
+    // parameter  s
+    // parameter  p0
+
+  // access flags 0x1
+  // signature (Ljava/util/List<+Ljava/lang/String;>;II)V
+  // declaration: void <init>(java.util.List<? extends java.lang.String>, int, int)
+  public <init>(Ljava/util/List;II)V
+    // parameter  s
+    // parameter  p0
+    // parameter  p1
+
+  // access flags 0x1
+  // signature (Ljava/util/List<*>;III)V
+  // declaration: void <init>(java.util.List<?>, int, int, int)
+  public <init>(Ljava/util/List;III)V
+    // parameter  s
+    // parameter  p0
+    // parameter  p1
+    // parameter  p3
 }
