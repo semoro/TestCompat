@@ -12,7 +12,7 @@ class SSGClass(
     var signature: String?,
     var superType: String?,
     var interfaces: Array<String>?,
-    override var version: Version?
+    override var version: Version
 ) : SSGNode<SSGClass>,
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
@@ -24,8 +24,8 @@ class SSGClass(
 
     var isKotlin = false
 
-    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
-    override var alternativeModalityState: MutableMap<Modality, Version?>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version>? = null
+    override var alternativeModalityState: MutableMap<Modality, Version>? = null
 
     var innerClassesBySignature: MutableMap<String, SSGInnerClassRef>? = null
     var ownerInfo: OuterClassInfo? = null
@@ -53,7 +53,7 @@ class SSGField(
     var desc: String,
     var signature: String?,
     var value: Any?,
-    override var version: Version?
+    override var version: Version
 ) : SSGNode<SSGField>,
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
@@ -64,7 +64,7 @@ class SSGField(
     override var annotations: List<AnnotationNode>? = null
     override var nullability: Nullability = Nullability.DEFAULT
 
-    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version>? = null
 
     fun fqd(): String = name + desc
 }
@@ -89,7 +89,7 @@ class SSGMethod(
     var desc: String,
     var signature: String?,
     var exceptions: Array<String>?,
-    override var version: Version?
+    override var version: Version
 ) : SSGNode<SSGMethod>,
     SSGVersionContainer,
     SSGAlternativeVisibilityContainer,
@@ -106,8 +106,8 @@ class SSGMethod(
     override var annotations: List<AnnotationNode>? = null
     override var nullability: Nullability = Nullability.DEFAULT
 
-    override var alternativeModalityState: MutableMap<Modality, Version?>? = null
-    override var alternativeVisibilityState: MutableMap<Visibility, Version?>? = null
+    override var alternativeModalityState: MutableMap<Modality, Version>? = null
+    override var alternativeVisibilityState: MutableMap<Visibility, Version>? = null
 
     var annotationDefaultValue: AnnotationNode? = null
 
@@ -129,18 +129,18 @@ class SSGParameterInfo(
 interface SSGNode<T : SSGNode<T>>
 
 interface SSGVersionContainer {
-    var version: Version?
+    var version: Version
 }
 
 interface SSGAlternativeVisibilityContainer : SSGAccess, SSGVersionContainer {
-    var alternativeVisibilityState: MutableMap<Visibility, Version?>?
+    var alternativeVisibilityState: MutableMap<Visibility, Version>?
 
     val alternativeVisibility
         get() = ::alternativeVisibilityState.getOrInit { mutableMapOf() }
 }
 
 interface SSGAlternativeModalityContainer : SSGAccess, SSGVersionContainer {
-    var alternativeModalityState: MutableMap<Modality, Version?>?
+    var alternativeModalityState: MutableMap<Modality, Version>?
 
     val alternativeModality
         get() = ::alternativeModalityState.getOrInit { mutableMapOf() }

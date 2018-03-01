@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.classpathToClassFiles
 import org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersion
 import org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersionHandler
+import org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersionLoader
 import org.jetbrains.kotlin.tools.kompot.test.TestClassVerifier
 import org.junit.BeforeClass
 import org.junit.ClassRule
@@ -28,11 +29,13 @@ class SimpleSupersetGeneratorTest {
         @JvmStatic
         val tmpDir = TemporaryFolder()
 
+        private val loader = SimpleTestVersionLoader()
+
         @BeforeClass
         @JvmStatic
         fun setup() {
             val gen = SupersetGenerator(logger,
-                SimpleTestVersionHandler(), configuration)
+                SimpleTestVersionHandler(), loader, configuration)
             gen.appendClasses(listOf("testSimple1.jar"),
                 SimpleTestVersion(setOf("1"))
             )

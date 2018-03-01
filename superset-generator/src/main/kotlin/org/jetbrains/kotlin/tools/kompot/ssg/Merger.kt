@@ -41,9 +41,6 @@ fun SSGAccess.sameKind(other: SSGAccess): Boolean = access.sameMasked(
 
 class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
-    operator fun Version?.plus(other: Version?) = versionHandler.plus(this, other)
-    operator fun Version?.contains(other: Version?) = versionHandler.contains(this, other)
-
     val S = MergeScopes(logger)
 
     private fun appendField(to: SSGClass, sourceField: SSGField, source: SSGClass) {
@@ -298,9 +295,8 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             val intoVis = into.visibility
             val fromVis = from.visibility
 
-            // += workaround KT-21724
-            into.alternativeVisibility[intoVis] = into.alternativeVisibility[intoVis] + into.version
-            into.alternativeVisibility[fromVis] = into.alternativeVisibility[fromVis] + from.version
+            into.alternativeVisibility.merge(intoVis, into.version, Version::plus)
+            into.alternativeVisibility.merge(fromVis, from.version, Version::plus)
 
             into.visibility = into.alternativeVisibility.keys.max() ?: Visibility.PUBLIC
         }
@@ -312,8 +308,8 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             val intoModality = into.modality
             val fromModality = from.modality
 
-            into.alternativeModality[intoModality] = into.alternativeModality[intoModality] + into.version
-            into.alternativeModality[fromModality] = into.alternativeModality[fromModality] + from.version
+            into.alternativeModality.merge(intoModality, into.version, Version::plus)
+            into.alternativeModality.merge(fromModality, from.version, Version::plus)
             into.modality = Modality.OPEN
         }
     }

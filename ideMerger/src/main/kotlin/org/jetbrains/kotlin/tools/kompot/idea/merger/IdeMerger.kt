@@ -45,8 +45,16 @@ fun main(args: Array<String>) {
     val outputPath = paths.last()
 
     val versionHandler = IdeMergedVersionHandler()
+    val loader = IdeMergedVersionLoader()
 
-    val provider = SupersetGeneratorProvider { SupersetGenerator(Logging.getLogger("IdeMerger"), versionHandler, configuration) }
+    val provider = SupersetGeneratorProvider {
+        SupersetGenerator(
+            Logging.getLogger("IdeMerger"),
+            versionHandler,
+            loader,
+            configuration
+        )
+    }
 
     for (idePath in idePaths) {
         appendIde(provider, idePath)
@@ -102,7 +110,8 @@ private fun appendResolver(
     resolver.processAllClasses { classNode ->
         if (classNode.name.startsWith("kotlin")) return@processAllClasses true
 
-        val visitor = SSGClassReadVisitor(ideMergedVersion, loadParameterNamesFromLVT = configuration.loadParameterNamesFromLVT)
+        val visitor =
+            SSGClassReadVisitor(ideMergedVersion, loadParameterNamesFromLVT = configuration.loadParameterNamesFromLVT)
         classNode.accept(visitor)
         val result = visitor.result
         if (!(result.isMemberClass && result.visibility == Visibility.PACKAGE_PRIVATE)) {

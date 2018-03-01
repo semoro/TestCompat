@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.AnnotationNode
 
 const val kotlinMetadataDesc = "Lkotlin/Metadata;"
 
-class SSGClassReadVisitor(private val rootVersion: Version?, private val loadParameterNamesFromLVT: Boolean = false) : ClassVisitor(Opcodes.ASM6) {
+class SSGClassReadVisitor(private val rootVersion: Version, private val loadParameterNamesFromLVT: Boolean = false) : ClassVisitor(Opcodes.ASM6) {
 
     lateinit var result: SSGClass
 

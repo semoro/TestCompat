@@ -5,7 +5,7 @@ import org.objectweb.asm.ClassReader
 import java.nio.file.Files
 import java.nio.file.Path
 
-class ClassToIRReader(classFiles: Sequence<Path>, version: Version?, configuration: Configuration) {
+class ClassToIRReader(classFiles: Sequence<Path>, version: Version, configuration: Configuration) {
     var re = 0
     val classes =
         classFiles.map {

@@ -2,6 +2,7 @@ package org.jetbrains.kotlin.tools.kompot.ssg
 
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
+import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
@@ -9,7 +10,12 @@ import org.slf4j.Logger
 import java.io.File
 import kotlin.system.measureTimeMillis
 
-class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler, val configuration: Configuration) {
+class SupersetGenerator(
+    val logger: Logger,
+    val versionHandler: VersionHandler,
+    val versionLoader: VersionLoader,
+    val configuration: Configuration
+) {
 
     val classesByFqName = mutableMapOf<String, SSGClass>()
     val merger = SSGMerger(logger, versionHandler)
@@ -32,23 +38,7 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler, 
         }
     }
 
-    fun cleanupVersions() {
-        classesByFqName.values.forEach { clz ->
-            clz.methodsBySignature.values.forEach { meth ->
-                if (meth is SSGMethod && meth.version == clz.version) {
-                    meth.version = null
-                }
-            }
-            clz.fieldsBySignature.values.forEach { field ->
-                if (field.version == clz.version) {
-                    field.version = null
-                }
-            }
-        }
-    }
-
     fun doOutput(outDir: File) {
-        cleanupVersions()
         println(classesByFqName.map { it.value }.filter { it.fqName.startsWith("api") }.joinToString(separator = "\n\n"))
         println("Stats: ")
         println(merger.S.formatStatistics())
@@ -65,8 +55,6 @@ class SupersetGenerator(val logger: Logger, val versionHandler: VersionHandler, 
             }
         }
         println("Write time: $writeTime ms")
-
-
 
 
     }

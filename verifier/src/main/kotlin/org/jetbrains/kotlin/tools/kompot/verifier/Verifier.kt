@@ -10,10 +10,7 @@ import org.jetbrains.kotlin.tools.kompot.commons.forClass
 import org.jetbrains.kotlin.tools.kompot.commons.formatForReport
 import org.jetbrains.kotlin.tools.kompot.commons.traceUpToVersionConst
 import org.objectweb.asm.*
-import org.objectweb.asm.tree.AbstractInsnNode
-import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodNode
-import org.objectweb.asm.tree.VarInsnNode
 import java.util.*
 
 class Verifier(
@@ -23,12 +20,17 @@ class Verifier(
 ) {
     val problems = mutableListOf<ProblemDescriptor>()
 
-    private fun parseVersionData(literalValue: String): Version {
+    private fun parseVersionData(literalValue: String?): Version {
         return versionLoader.load(literalValue)
     }
 
-    private fun Version?.disallows(other: Version?): Boolean {
+    private fun Version.disallows(other: Version?): Boolean {
+        if (other == null) return false
         return versionCompareHandler.isSubset(other, this)
+    }
+
+    private fun nullVersion(): Version {
+        return versionLoader.load(null)
     }
 
     private inner class ClassCompatCheckingVisitor(val problemSink: (ProblemDescriptor) -> Unit) : ClassVisitor(
@@ -56,7 +58,7 @@ class Verifier(
             this.source = source
         }
 
-        var classLevelVersion: Version? = null
+        var classLevelVersion: Version = nullVersion()
         fun doVisitAnnotation(annDesc: String?, out: (Version) -> Unit): AnnotationVisitor? {
             if (annDesc != compatibleWithDesc) {
                 return null
@@ -80,19 +82,14 @@ class Verifier(
         ): MethodVisitor {
             val methodNode = MethodNode(access, name, desc, signature, exceptions)
             return object : MethodVisitor(Opcodes.ASM5, methodNode) {
-                var methodLevelVersion: Version? = null
+                var methodLevelVersion: Version = classLevelVersion
                 override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
                     return doVisitAnnotation(desc) { methodLevelVersion = it }
                 }
 
                 val versionScopes = ArrayDeque<Version>()
 
-                var currentScope: Version? = null
-
-                override fun visitCode() {
-                    currentScope = methodLevelVersion ?: classLevelVersion
-                    super.visitCode()
-                }
+                val currentScope: Version get() = versionScopes.peek() ?: methodLevelVersion
 
                 var firstLine = -1
                 var lineNumber = 0
@@ -128,14 +125,8 @@ class Verifier(
                                     ?: return println("WARN: Unresolved scope")
                             val vd = parseVersionData(versionString)
                             versionScopes.add(vd)
-                            currentScope = vd
                         } else if (calleeName == leaveVersionScopeName) {
                             versionScopes.remove()
-                            currentScope = if (versionScopes.isEmpty()) {
-                                methodLevelVersion ?: classLevelVersion
-                            } else {
-                                versionScopes.peek()
-                            }
                         }
                     } else {
                         val calleeOwnerType = Type.getObjectType(callTargetOwner)
@@ -150,7 +141,8 @@ class Verifier(
                             )
                         }
 
-                        val calleeVersionInfo = versionInfoProvider.forMethod("$callTargetOwner.$calleeName $calleeDesc")
+                        val calleeVersionInfo =
+                            versionInfoProvider.forMethod("$callTargetOwner.$calleeName $calleeDesc")
                         val calleeMethodType = Type.getMethodType(calleeDesc)
                         if (currentScope.disallows(calleeVersionInfo)) {
                             problemSink(

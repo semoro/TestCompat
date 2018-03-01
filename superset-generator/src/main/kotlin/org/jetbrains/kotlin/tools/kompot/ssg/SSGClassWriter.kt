@@ -8,10 +8,15 @@ import org.objectweb.asm.Opcodes.ACC_STATIC
 
 class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolean = true) {
 
-    private fun SSGVersionContainer.writeVersion(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
-        val version = version ?: return
+    private fun SSGVersionContainer.writeVersion(
+        getVisitor: (String, Boolean) -> AnnotationVisitor?,
+        parentVersion: Version? = null
+    ) {
+        val version = version
+        if (parentVersion == version) return
+        val literal = version.asLiteralValue() ?: return
         getVisitor(existsInDesc, true)?.apply {
-            visit("version", version.asLiteralValue())
+            visit("version", literal)
             visitEnd()
         }
     }
@@ -22,11 +27,11 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
         annDesc: String,
         getVisitor: (String, Boolean) -> AnnotationVisitor?,
         enumValues: List<Enum<*>>,
-        versions: List<Version?>
+        versions: List<Version>
     ) {
         getVisitor(annDesc, true)?.apply {
             visitArray("version")?.apply {
-                versions.forEach { visit(null, it!!.asLiteralValue()) }
+                versions.forEach { visit(null, it.asLiteralValue()) }
                 visitEnd()
             }
             visitArray(arrayName)?.apply {
@@ -41,13 +46,13 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
 
     private fun SSGAlternativeVisibilityContainer.writeAlternativeVisibility(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
         val alternativeVisibility = alternativeVisibilityState ?: return
-        val (visibilities, versions) = alternativeVisibility.toList().filter { it.second != null }.unzip()
+        val (visibilities, versions) = alternativeVisibility.toList().unzip()
         writeAltAnnotation("visibility", visEnumDesc, altVisDesc, getVisitor, visibilities, versions)
     }
 
     private fun SSGAlternativeModalityContainer.writeAlternativeModality(getVisitor: (String, Boolean) -> AnnotationVisitor?) {
         val alternativeModality = alternativeModalityState ?: return
-        val (modalities, versions) = alternativeModality.toList().filter { it.second != null }.unzip()
+        val (modalities, versions) = alternativeModality.toList().unzip()
         writeAltAnnotation("modality", modEnumDesc, altModDesc, getVisitor, modalities, versions)
     }
 
@@ -142,7 +147,7 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
 
         node.fieldsBySignature.values.forEach {
             classWriter.visitField(it.access, it.name, it.desc, it.signature, it.value)?.apply {
-                it.writeVersion(::visitAnnotation)
+                it.writeVersion(::visitAnnotation, node.version)
                 it.writeAlternativeVisibility(::visitAnnotation)
                 it.writeNullability(::visitAnnotation)
                 it.writeAnnotations(::visitAnnotation)
@@ -155,8 +160,14 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
             val allMethods = it.methods
 
             allMethods.forEachIndexed { index, method ->
-                val namePostfix = if(allMethods.size > 1) "\$V$index" else ""
-                classWriter.visitMethod(method.access, method.name + namePostfix, method.desc, method.signature, method.exceptions)?.apply {
+                val namePostfix = if (allMethods.size > 1) "\$V$index" else ""
+                classWriter.visitMethod(
+                    method.access,
+                    method.name + namePostfix,
+                    method.desc,
+                    method.signature,
+                    method.exceptions
+                )?.apply {
 
                     val namedParametersPresent = method.parameterInfoArray.any { it?.name != null }
 
@@ -164,11 +175,23 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
 
                     for (parameter in method.parameterInfoArray) {
                         parameter ?: continue
-                        parameter.writeNullability { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
-                        parameter.writeAnnotations { desc, vis -> visitParameterAnnotation(parameter.number, desc, vis) }
+                        parameter.writeNullability { desc, vis ->
+                            visitParameterAnnotation(
+                                parameter.number,
+                                desc,
+                                vis
+                            )
+                        }
+                        parameter.writeAnnotations { desc, vis ->
+                            visitParameterAnnotation(
+                                parameter.number,
+                                desc,
+                                vis
+                            )
+                        }
                     }
 
-                    method.writeVersion(::visitAnnotation)
+                    method.writeVersion(::visitAnnotation, node.version)
                     method.writeAlternativeVisibility(::visitAnnotation)
                     method.writeAlternativeModality(::visitAnnotation)
                     method.writeNullability(::visitAnnotation)
