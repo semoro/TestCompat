@@ -151,11 +151,11 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
                 }
                 (a is Super || a is Extends) && b is Invariant -> {
                     a as TypeArgumentWithVariance
-                    if (a.node == b.node) return b
+                    if (a.node == b.node) return a
 
                     val newNode = mergeTypeSignatureNodes(a.node, b.node) ?: return Unbounded
 
-                    b.copy(node = newNode)
+                    a.copy(node = newNode)
                 }
                 else -> Unbounded
             }
