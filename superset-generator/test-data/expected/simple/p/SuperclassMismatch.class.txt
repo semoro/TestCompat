@@ -1,0 +1,10 @@
+// class version 52.0 (52)
+// access flags 0x21
+public class p/SuperclassMismatch extends p/data/SC1  {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
+
+  // access flags 0x1
+  public <init>()V
+}

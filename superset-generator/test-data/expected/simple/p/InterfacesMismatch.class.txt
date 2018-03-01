@@ -1,0 +1,10 @@
+// class version 52.0 (52)
+// access flags 0x21
+public class p/InterfacesMismatch implements p/data/I1 p/data/CommonI p/data/I2  {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1, 2")
+
+  // access flags 0x1
+  public <init>()V
+}
