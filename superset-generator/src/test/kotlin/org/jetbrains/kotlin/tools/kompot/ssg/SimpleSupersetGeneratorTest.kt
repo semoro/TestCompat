@@ -98,4 +98,14 @@ class SimpleSupersetGeneratorTest {
     fun testTypeParameters() {
         verifyOut("p/TypeParameters.class")
     }
+
+    @Test
+    fun testSuperclassMismatch() {
+        verifyOut("p/SuperclassMismatch.class")
+    }
+
+    @Test
+    fun testInterfacesMismatch() {
+        verifyOut("p/InterfacesMismatch.class")
+    }
 }

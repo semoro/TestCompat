@@ -20,6 +20,7 @@ object MergeFailures {
     val classKindMismatch = MergeFailureKey("Method kind mismatch")
     val ownerClassMismatch = MergeFailureKey("Owner mismatch")
     val kotlinMismatch = MergeFailureKey("Kotlin mismatch")
+    val superTypeMismatch = MergeFailureKey("SuperType mismatch")
 
     val differentAnnotationsWithSameDesc = MergeFailureKey("Different annotations with same desc")
 
