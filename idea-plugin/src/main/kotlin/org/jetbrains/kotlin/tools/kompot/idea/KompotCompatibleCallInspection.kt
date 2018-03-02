@@ -25,8 +25,8 @@ class KompotCompatibleCallInspection : LocalInspectionTool() {
         val module = call.sourcePsiElement?.let { ModuleUtilCore.findModuleForPsiElement(it) } ?: return
         val versionLoader = ModuleServiceManager.getService(module, VersionLoader::class.java) ?: return
 
-        val expectedVersionString = expectedVersion(call)
-        val specifiedVersionString = compatibleVersionString(call)
+        val expectedVersionString = getExpectedVersion(call)
+        val specifiedVersionString = getCompatibleVersionString(call)
 
         val version = versionLoader.load(expectedVersionString)
 
@@ -50,7 +50,7 @@ class KompotCompatibleCallInspection : LocalInspectionTool() {
         }
     }
 
-    private fun expectedVersion(call: UCallExpression): String? {
+    private fun getExpectedVersion(call: UCallExpression): String? {
         val method = call.resolve() ?: return null
 
         val existsIn = method.modifierList
@@ -60,17 +60,14 @@ class KompotCompatibleCallInspection : LocalInspectionTool() {
         return (existsIn.findAttributeValue("version") as? PsiLiteral)?.value as? String
     }
 
-    private fun compatibleVersionString(call: UCallExpression): String? {
+    private fun getCompatibleVersionString(call: UCallExpression): String? {
         for (element in call.withContainingElements) {
             when (element) {
                 is UMethod -> return element
                     .findAnnotation(COMPATIBLE_WITH)
                     ?.findAttributeValue("version")?.evaluateString()
-                is UCallExpression -> if (element.resolve()?.let {
-                        it.name == "forVersion" && it.containingClass?.qualifiedName?.also {
-                            println("fqn = $it")
-                        } == "org.jetbrains.kotlin.tools.kompot.api.source.SourceApiKt"
-                    } == true) {
+                is UCallExpression ->
+                    if (element.resolve()?.let { it.name == "forVersion" && it.containingClass?.qualifiedName == "org.jetbrains.kotlin.tools.kompot.api.source.SourceApiKt" } == true) {
                     return element.valueArguments.firstOrNull()?.evaluateString()
                 }
             }

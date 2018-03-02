@@ -23,7 +23,7 @@ extensions.configure<IntelliJPluginExtension>("intellij") {
 
 dependencies {
     compile(project(":tool-api"))
-    testCompile(project(":test-helpers"))
+    compile(project(":test-helpers"))
 //    compile("com.jetbrains.plugins:org.jetbrains.kotlin:1.2.30-eap-47-IJ2017.3-1:EAP-1.2@zip")
 //    compile("com.jetbrains.plugins:org.jetbrains.kotlin:1.2.21-release-eap-47-IJ2017.3-1")
 }

@@ -2,11 +2,6 @@ package org.jetbrains.kotlin.tools.kompot.idea
 
 import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import com.intellij.testFramework.registerServiceInstance
-import org.jetbrains.kotlin.tools.kompot.api.tool.Version
-import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
-import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
-import org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersion
 
 @TestDataPath("\$CONTENT_ROOT/../../testData")
 class InspectionTest : LightCodeInsightFixtureTestCase() {
@@ -19,13 +14,6 @@ class InspectionTest : LightCodeInsightFixtureTestCase() {
     override fun setUp() {
         super.setUp()
         myFixture.enableInspections(KompotCompatibleCallInspection::class.java)
-
-        myFixture.module.registerServiceInstance(VersionLoader::class.java, object : VersionLoader {
-            override fun load(literalValue: String?): Version = literalValue?.let {
-                SimpleTestVersion(it.split(",").toSet())
-            } ?: SimpleTestVersion.Default
-        })
-        myFixture.module.registerServiceInstance(VersionHandler::class.java, object : VersionHandler {})
 
         myFixture.copyFileToProject("org/jetbrains/kotlin/tools/kompot/api/annotations/annotations.kt")
         myFixture.copyFileToProject("org/jetbrains/kotlin/tools/kompot/api/source/sourceApi.kt")

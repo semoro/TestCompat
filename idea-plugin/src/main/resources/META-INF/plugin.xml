@@ -10,5 +10,8 @@
                          implementationClass="org.jetbrains.kotlin.tools.kompot.idea.KompotCompatibleCallInspection"
                          groupName="Plugin DevKit" displayName="Kompot compatibility check"/>
 
+        <moduleService serviceInterface="org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader"
+                       serviceImplementation="org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersionLoader"/>
+
     </extensions>
 </idea-plugin>

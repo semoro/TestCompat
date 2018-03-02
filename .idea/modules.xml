@@ -3,8 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/TestCompat.iml" filepath="$PROJECT_DIR$/.idea/modules/TestCompat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc_main.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc/buildSrc_test.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/common-internals/common-internals.iml" filepath="$PROJECT_DIR$/.idea/modules/common-internals/common-internals.iml" group="common-internals" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/common-internals/common-internals_main.iml" filepath="$PROJECT_DIR$/.idea/modules/common-internals/common-internals_main.iml" group="common-internals" />
@@ -12,10 +15,23 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin.iml" group="gradle-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_main.iml" group="gradle-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/gradle-plugin/gradle-plugin_test.iml" group="gradle-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup.iml" filepath="$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup.iml" group="ide-tool-setup" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup_main.iml" group="ide-tool-setup" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ide-tool-setup/ide-tool-setup_test.iml" group="ide-tool-setup" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger.iml" group="ideMerger" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_main.iml" group="ideMerger" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ideMerger/ideMerger_test.iml" group="ideMerger" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin.iml" group="idea-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin_main.iml" group="idea-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/idea-plugin/idea-plugin_test.iml" group="idea-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub.iml" group="source-api/intrinsics-stub" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub_main.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub_main.iml" group="source-api/intrinsics-stub" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub_test.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/intrinsics-stub/intrinsics-stub_test.iml" group="source-api/intrinsics-stub" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor.iml" group="post-processor" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data.iml" group="post-processor/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_main.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_main.iml" group="post-processor/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_test.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_test.iml" group="post-processor/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_testSimple.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/test-data/post-processor-test-data_testSimple.iml" group="post-processor/test-data" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_main.iml" group="post-processor" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" filepath="$PROJECT_DIR$/.idea/modules/post-processor/post-processor_test.iml" group="post-processor" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api.iml" group="source-api" />
@@ -25,8 +41,21 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api_main.iml" group="source-api" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/source-api/source-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/source-api/source-api_test.iml" group="source-api" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator.iml" group="superset-generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data.iml" group="superset-generator/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_main.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_main.iml" group="superset-generator/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_test.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_test.iml" group="superset-generator/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_testSimple1.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_testSimple1.iml" group="superset-generator/test-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_testSimple2.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/superset-generator-test-data_testSimple2.iml" group="superset-generator/test-data" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_main.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_main.iml" group="superset-generator" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_test.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/superset-generator_test.iml" group="superset-generator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_main.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_test.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_testSimple1.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_testSimple1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_testSimple2.iml" filepath="$PROJECT_DIR$/.idea/modules/superset-generator/test-data/test-data_testSimple2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers.iml" filepath="$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers.iml" group="test-helpers" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers_main.iml" filepath="$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers_main.iml" group="test-helpers" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers_test.iml" filepath="$PROJECT_DIR$/.idea/modules/test-helpers/test-helpers_test.iml" group="test-helpers" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api.iml" group="tool-api" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api_main.iml" group="tool-api" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/tool-api/tool-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/tool-api/tool-api_test.iml" group="tool-api" />
