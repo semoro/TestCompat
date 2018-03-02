@@ -4,5 +4,14 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <consoleFilterProvider implementation="org.jetbrains.kotlin.tools.kompot.idea.KompotConsoleFilterProvider"/>
+        <localInspection language="UAST" shortName="KompotCompatibleCallInspection"
+                         groupPath="Plugin DevKit"
+                         enabledByDefault="true" level="WARNING"
+                         implementationClass="org.jetbrains.kotlin.tools.kompot.idea.KompotCompatibleCallInspection"
+                         groupName="Plugin DevKit" displayName="Kompot compatibility check"/>
+
+        <moduleService serviceInterface="org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader"
+                       serviceImplementation="org.jetbrains.kotlin.tools.kompot.test.SimpleTestVersionLoader"/>
+
     </extensions>
 </idea-plugin>
