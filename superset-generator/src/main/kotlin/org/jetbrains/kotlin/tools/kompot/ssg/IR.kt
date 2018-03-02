@@ -27,7 +27,7 @@ class SSGClass(
     override var alternativeVisibilityState: MutableMap<Visibility, Version>? = null
     override var alternativeModalityState: MutableMap<Modality, Version>? = null
 
-    var innerClassesBySignature: MutableMap<String, SSGInnerClassRef>? = null
+    var innerClassesBySignature: Map<String, SSGInnerClassRef> = emptyMap()
     var ownerInfo: OuterClassInfo? = null
 
     val methodsBySignature = mutableMapOf<String, SSGMethodOrGroup>()

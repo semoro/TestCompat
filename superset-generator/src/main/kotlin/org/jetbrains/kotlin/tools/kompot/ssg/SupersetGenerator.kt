@@ -17,7 +17,7 @@ class SupersetGenerator(
     val configuration: Configuration
 ) {
 
-    val classesByFqName = mutableMapOf<String, SSGClass>()
+    val classesByFqName = mutableMapOf<String, List<SSGClass>>()
     val merger = SSGMerger(logger, versionHandler)
 
     fun appendClasses(classes: Sequence<SSGClass>) {
@@ -32,29 +32,35 @@ class SupersetGenerator(
 
     fun appendClassNode(node: SSGClass) {
         mergeTime += measureTimeMillis {
-            classesByFqName[node.fqName]?.let { merger.mergeClasses(it, node) } ?: run {
-                classesByFqName[node.fqName] = node
+            classesByFqName.merge(node.fqName, listOf(node)) { all, new ->
+                all + new.filter { newClass ->
+                    all.none { merger.mergeClasses(it, newClass) }
+                }
             }
         }
     }
 
     fun doOutput(outDir: File) {
-        println(classesByFqName.map { it.value }.filter { it.fqName.startsWith("api") }.joinToString(separator = "\n\n"))
-        println("Stats: ")
-        println(merger.S.formatStatistics())
-        println("Merge time: $mergeTime ms")
+        logger.info("\nStats: ${merger.S.formatStatistics()}")
+        logger.info("Merge time: $mergeTime ms")
+
+
         val writeTime = measureTimeMillis {
             val writer = SSGClassWriter(configuration)
-            classesByFqName.values.forEach {
-                val sub = File(outDir, it.fqName + ".class")
+            classesByFqName.values.forEach { classes ->
+                val clazz = classes.singleOrNull() ?: run {
+                    logger.warn("Multiple classes with same name:\n ${classes.joinToString { it.debugText() }}")
+                    classes.first()
+                }
+                val sub = File(outDir, clazz.fqName + ".class")
                 sub.parentFile.mkdirs()
                 val cw = ClassWriter(COMPUTE_FRAMES or COMPUTE_MAXS)
-                writer.write(it, cw)
+                writer.write(clazz, cw)
                 sub.writeBytes(cw.toByteArray())
                 logger.debug("W: $sub")
             }
         }
-        println("Write time: $writeTime ms")
+        logger.info("Write time: $writeTime ms")
 
 
     }

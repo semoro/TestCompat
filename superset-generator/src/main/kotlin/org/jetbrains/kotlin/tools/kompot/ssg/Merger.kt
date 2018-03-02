@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
-import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.superTypeMismatch
 import org.objectweb.asm.signature.SignatureReader
 import org.objectweb.asm.signature.SignatureWriter
 import org.slf4j.Logger
@@ -271,20 +270,16 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
         mergeAnnotations(a, b)
 
-        if (b.innerClassesBySignature != null) {
-            val target = a::innerClassesBySignature.getOrInit { mutableMapOf() }
-            val allInners =
-                (target.entries + b.innerClassesBySignature!!.entries)
-                    .distinct()
-                    .groupBy({ it.key }, { it.value })
-            a.innerClassesBySignature = mutableMapOf()
-            allInners.forEach { (desc, refs) ->
-                tryMerge(S.innerClassReferences, refs) {
-                    val ref = refs.singleOrNull() ?: reportMergeFailure(differentInnersWithSameDesc, desc)
-                    a.innerClassesBySignature!![desc] = ref
-                }
-            }
+        if (b.innerClassesBySignature.isNotEmpty()) {
+            val allInners = a.innerClassesBySignature mergeToMultiMapWith b.innerClassesBySignature
 
+            a.innerClassesBySignature =
+                    allInners.mapNotNull { (desc, refs) ->
+                        tryMerge(S.innerClassReferences, refs) {
+                            val ref = refs.singleOrNull() ?: reportMergeFailure(differentInnersWithSameDesc, desc)
+                            desc to ref
+                        }
+                    }.toMap()
         }
 
     }
@@ -314,10 +309,10 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
         }
     }
 
-    fun mergeClasses(a: SSGClass, b: SSGClass) {
+    fun mergeClasses(a: SSGClass, b: SSGClass): Boolean {
         if (b.version in a.version) {
             logger.info("Duplicated class ${a.fqName}")
-            return
+            return true
         }
 
         tryMerge(S.classes, a, b) {
@@ -331,7 +326,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
                 reportMergeFailure(ownerClassMismatch, "${a.ownerInfo} != ${b.ownerInfo}")
             }
             if (a.superType != b.superType) {
-                reportMergeFailure(superTypeMismatch, "${a.superType} != ${b.superType}")
+                return false
             }
             if (a.signature != b.signature) {
                 reportMergeFailure(genericsMismatch, "${a.signature} != ${b.signature}")
@@ -340,6 +335,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             mergeModalities(a, b)
             mergeClassesInternals(a, b)
         }
+        return true
     }
 }
 
