@@ -20,6 +20,7 @@ class SimpleTestVersion(val s: Set<String>) : Version {
         }
 
         override fun equals(other: Any?): Boolean {
+            if (other === this) return true
             return other == this
         }
     }
