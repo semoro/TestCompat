@@ -5,9 +5,8 @@ import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
 import org.jetbrains.kotlin.tools.kompot.commons.*
-import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.TypeArgumentWithVariance
-import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.TypeArgumentWithVariance.*
 import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.Unbounded
+import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.Variance.INVARIANT
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.classKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentAnnotationsWithSameDesc
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.differentInnersWithSameDesc
@@ -135,23 +134,23 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
 
     private fun mergeTypeSignatureNodes(a: TypeSignatureNode, b: TypeSignatureNode): TypeSignatureNode? {
-        fun mergeArguments(arguments: List<TypeArgument>): TypeArgument {
-            val (a, b) = arguments.sortedBy { it.priority() }
+        fun mergeArguments(arguments: Pair<TypeArgument, TypeArgument>): TypeArgument {
+            val (a, b) = arguments
 
             return when {
                 a == b -> a
                 a === Unbounded -> a
-                a is TypeArgumentWithVariance && b is TypeArgumentWithVariance && a::class == b::class -> {
+                a is TypeArgument.Bounded && b is TypeArgument.Bounded && a.variance == b.variance -> {
                     val newNode = mergeTypeSignatureNodes(a.node, b.node) ?: return Unbounded
                     b.copy(node = newNode)
                 }
-                (a is Super || a is Extends) && b is Invariant -> {
-                    a as TypeArgumentWithVariance
-                    if (a.node == b.node) return a
-
+                a is TypeArgument.Bounded && b is TypeArgument.Bounded && a.isInvariant != b.isInvariant -> {
                     val newNode = mergeTypeSignatureNodes(a.node, b.node) ?: return Unbounded
 
-                    a.copy(node = newNode)
+                    val argumentToCopy =
+                        a.takeIf { it.variance != INVARIANT } ?: b
+
+                    argumentToCopy.copy(node = newNode)
                 }
                 else -> Unbounded
             }
@@ -160,21 +159,20 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             a == b -> return a
             a is TypeSignatureNode.ClassType && b is TypeSignatureNode.ClassType -> {
                 if (a.classTypeName != b.classTypeName) return null
-                if (a.innerName != b.innerName) return null
+                val (aInnerNames, aInnerArgs) = a.inners.unzip()
+                val (bInnerNames, bInnerArgs) = b.inners.unzip()
+                if (aInnerNames != bInnerNames) return null
 
 
-                val aClassArgs = a.classArgs.orEmpty()
-                val bClassArgs = b.classArgs.orEmpty()
+                val aClassArgs = a.classArgs
+                val bClassArgs = b.classArgs
                 if (aClassArgs.size != bClassArgs.size) return null
-
-                val aInnerArgs = a.innerArgs.orEmpty()
-                val bInnerArgs = b.innerArgs.orEmpty()
                 if (aInnerArgs.size != bInnerArgs.size) return null
 
 
-                val newClassArgs = aClassArgs.zip(bClassArgs).map { mergeArguments(it.toList()) }.takeIf { it.any() }
-                val newInnerArgs = aInnerArgs.zip(bInnerArgs).map { mergeArguments(it.toList()) }.takeIf { it.any() }
-                return a.copy(classArgs = newClassArgs, innerArgs = newInnerArgs)
+                val newClassArgs = aClassArgs.zip(bClassArgs).map { mergeArguments(it) }
+                val newInnerArgs = aInnerArgs.zip(bInnerArgs).map { (a, b) -> a.zip(b).map { mergeArguments(it) } }
+                return a.copy(classArgs = newClassArgs, inners = aInnerNames zip newInnerArgs)
             }
             a is TypeSignatureNode.ArrayType && b is TypeSignatureNode.ArrayType -> {
                 val newType = mergeTypeSignatureNodes(a.type, b.type) ?: return null

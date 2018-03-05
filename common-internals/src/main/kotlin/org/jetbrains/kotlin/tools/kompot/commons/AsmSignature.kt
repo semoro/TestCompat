@@ -1,37 +1,35 @@
 package org.jetbrains.kotlin.tools.kompot.commons
 
-import org.jetbrains.kotlin.tools.kompot.commons.TypeArgument.TypeArgumentWithVariance.*
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.signature.SignatureVisitor
 
 
 abstract class NodeWithTypeVariables : SignatureVisitor(Opcodes.ASM6) {
-    var typeVariables: List<TypeVariable>? = null
+    var typeVariables: List<TypeVariable> = emptyList()
 
     override fun visitFormalTypeParameter(name: String) {
-        this.typeVariables = (this.typeVariables ?: emptyList()) + TypeVariable(name)
+        this.typeVariables = this.typeVariables + TypeVariable(name)
         super.visitFormalTypeParameter(name)
     }
 
     override fun visitClassBound(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            typeVariables!!.last().classBound = it
+            typeVariables.last().classBound = it
         }
     }
 
     override fun visitInterfaceBound(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            val variable = typeVariables!!.last()
-            variable.interfaceBounds = (variable.interfaceBounds ?: emptyList()) + it
+            val variable = typeVariables.last()
+            variable.interfaceBounds += it
         }
     }
 
-    open fun accept(sv: SignatureVisitor?) {
-        sv ?: return
-        typeVariables?.forEach {
+    open fun accept(sv: SignatureVisitor) {
+        typeVariables.forEach {
             sv.visitFormalTypeParameter(it.name)
             it.classBound?.accept(sv.visitClassBound())
-            it.interfaceBounds?.forEach { it.accept(sv.visitInterfaceBound()) }
+            it.interfaceBounds.forEach { it.accept(sv.visitInterfaceBound()) }
         }
     }
 }
@@ -52,49 +50,35 @@ class ClassSignatureNode : NodeWithTypeVariables() {
             interfaces = (interfaces ?: emptyList()) + it
         }
     }
-}
 
-class TypeVariable(val name: String) {
-    var classBound: TypeSignatureNode? = null
-    var interfaceBounds: List<TypeSignatureNode>? = null
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as TypeVariable
-
-        if (name != other.name) return false
-        if (classBound != other.classBound) return false
-        if (interfaceBounds != other.interfaceBounds) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + (classBound?.hashCode() ?: 0)
-        result = 31 * result + (interfaceBounds?.hashCode() ?: 0)
-        return result
+    override fun accept(sv: SignatureVisitor) {
+        super.accept(sv)
+        //TODO
     }
 }
+
+data class TypeVariable(
+    val name: String,
+    var classBound: TypeSignatureNode? = null,
+    var interfaceBounds: List<TypeSignatureNode> = emptyList()
+)
 
 
 class MethodSignatureNode : NodeWithTypeVariables() {
 
     var returnType: TypeSignatureNode? = null
-    var parameterTypes: List<TypeSignatureNode>? = null
-    var exceptionTypes: List<TypeSignatureNode>? = null
+    var parameterTypes: List<TypeSignatureNode> = emptyList()
+    var exceptionTypes: List<TypeSignatureNode> = emptyList()
 
     override fun visitParameterType(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            parameterTypes = (parameterTypes ?: emptyList()) + it
+            parameterTypes += it
         }
     }
 
     override fun visitExceptionType(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            exceptionTypes = (exceptionTypes ?: emptyList()) + it
+            exceptionTypes += it
         }
     }
 
@@ -104,12 +88,11 @@ class MethodSignatureNode : NodeWithTypeVariables() {
         }
     }
 
-    override fun accept(sv: SignatureVisitor?) {
+    override fun accept(sv: SignatureVisitor) {
         super.accept(sv)
-        sv ?: return
-        parameterTypes?.forEach { it.accept(sv.visitParameterType()) }
+        parameterTypes.forEach { it.accept(sv.visitParameterType()) }
         returnType?.accept(sv.visitReturnType())
-        exceptionTypes?.forEach { it.accept(sv.visitExceptionType()) }
+        exceptionTypes.forEach { it.accept(sv.visitExceptionType()) }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -127,8 +110,8 @@ class MethodSignatureNode : NodeWithTypeVariables() {
 
     override fun hashCode(): Int {
         var result = returnType?.hashCode() ?: 0
-        result = 31 * result + (parameterTypes?.hashCode() ?: 0)
-        result = 31 * result + (exceptionTypes?.hashCode() ?: 0)
+        result = 31 * result + parameterTypes.hashCode()
+        result = 31 * result + exceptionTypes.hashCode()
         return result
     }
 
@@ -138,57 +121,32 @@ class MethodSignatureNode : NodeWithTypeVariables() {
 
 sealed class TypeArgument {
     object Unbounded : TypeArgument()
-    sealed class TypeArgumentWithVariance() : TypeArgument() {
-        abstract val node: TypeSignatureNode
-        abstract fun copy(node: TypeSignatureNode = this.node): TypeArgumentWithVariance
-        data class Extends(override val node: TypeSignatureNode) : TypeArgumentWithVariance()
-        data class Super(override val node: TypeSignatureNode) : TypeArgumentWithVariance()
-        data class Invariant(override val node: TypeSignatureNode) : TypeArgumentWithVariance()
+    data class Bounded(val variance: Variance, val node: TypeSignatureNode) : TypeArgument() {
+
+        val isInvariant = variance == Variance.INVARIANT
     }
 
-    fun accept(sv: SignatureVisitor?) {
-        sv ?: return
+    enum class Variance(val descriptor: Char) {
+        INVARIANT(SignatureVisitor.INSTANCEOF),
+        SUPER(SignatureVisitor.SUPER),
+        EXTENDS(SignatureVisitor.EXTENDS)
+    }
+
+    fun accept(sv: SignatureVisitor) {
         when (this) {
             Unbounded -> sv.visitTypeArgument()
-            is Extends -> node.accept(sv.visitTypeArgument(SignatureVisitor.EXTENDS))
-            is Super -> node.accept(sv.visitTypeArgument(SignatureVisitor.SUPER))
-            is Invariant -> node.accept(sv.visitTypeArgument(SignatureVisitor.INSTANCEOF))
-        }
-    }
-
-    fun priority(): Int {
-        return when(this) {
-            is Unbounded -> 0
-            is Extends -> 1
-            is Super -> 2
-            is Invariant -> 3
+            is Bounded -> node.accept(sv.visitTypeArgument(variance.descriptor))
         }
     }
 }
 
 
-
 sealed class TypeSignatureNode {
     data class ArrayType(val type: TypeSignatureNode) : TypeSignatureNode()
-    class Primitive private constructor(val descriptor: Char) : TypeSignatureNode() {
+    data class Primitive private constructor(val descriptor: Char) : TypeSignatureNode() {
         companion object {
             private val descriptors = listOf('V', 'Z', 'C', 'B', 'S', 'I', 'F', 'J', 'D')
             val primitiveTypes = descriptors.map { Primitive(it) }
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Primitive
-
-            if (descriptor != other.descriptor) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return descriptor.hashCode()
         }
     }
 
@@ -196,28 +154,25 @@ sealed class TypeSignatureNode {
 
     data class ClassType(
         val classTypeName: String,
-        val classArgs: List<TypeArgument>?,
-        val innerName: String?,
-        val innerArgs: List<TypeArgument>?
+        val classArgs: List<TypeArgument>,
+        val inners: List<Pair<String, List<TypeArgument>>>
     ) : TypeSignatureNode()
 
     companion object {
         val primitiveTypeByDescriptor = Primitive.primitiveTypes.associateBy { it.descriptor }
     }
 
-    fun accept(sv: SignatureVisitor?) {
-        sv ?: return
-
+    fun accept(sv: SignatureVisitor) {
         when (this) {
             is Primitive -> sv.visitBaseType(descriptor)
             is ArrayType -> type.accept(sv.visitArrayType())
             is TypeVariable -> sv.visitTypeVariable(name)
             is ClassType -> {
                 sv.visitClassType(classTypeName)
-                classArgs?.forEach { it.accept(sv) }
-                if (innerName != null) {
+                classArgs.forEach { it.accept(sv) }
+                inners.forEach { (innerName, innerArgs) ->
                     sv.visitInnerClassType(innerName)
-                    innerArgs?.forEach { it.accept(sv) }
+                    innerArgs.forEach { it.accept(sv) }
                 }
                 sv.visitEnd()
             }
@@ -229,9 +184,10 @@ private class TypeSignatureNodeBuilder(val out: (TypeSignatureNode) -> Unit) : S
 
 
     private var classTypeName: String? = null
-    private var innerName: String? = null
-    private var classArgs: List<TypeArgument>? = null
-    private var innerArgs: List<TypeArgument>? = null
+    private var innerNames: List<String> = emptyList()
+    private var allInnerArgs: List<List<TypeArgument>> = emptyList()
+    private var classArgs: List<TypeArgument> = emptyList()
+    private var innerArgs: List<TypeArgument> = emptyList()
 
 
     override fun visitBaseType(descriptor: Char) {
@@ -250,16 +206,14 @@ private class TypeSignatureNodeBuilder(val out: (TypeSignatureNode) -> Unit) : S
 
     override fun visitClassType(name: String?) {
         classTypeName = name
-        super.visitClassType(name)
     }
 
 
     private fun addArgument(argument: TypeArgument) {
-        if (innerName != null) {
-            val list = innerArgs ?: emptyList()
-            innerArgs = list + argument
+        if (innerNames.isNotEmpty()) {
+            innerArgs += argument
         } else if (classTypeName != null) {
-            val list = classArgs ?: emptyList()
+            val list = classArgs
             classArgs = list + argument
         }
     }
@@ -267,38 +221,44 @@ private class TypeSignatureNodeBuilder(val out: (TypeSignatureNode) -> Unit) : S
 
     override fun visitTypeArgument() {
         addArgument(TypeArgument.Unbounded)
-        super.visitTypeArgument()
     }
 
     override fun visitTypeArgument(wildcard: Char): SignatureVisitor {
         return TypeSignatureNodeBuilder { node ->
-            val arg = when (wildcard) {
-                SignatureVisitor.EXTENDS -> Extends(node)
-                SignatureVisitor.SUPER -> Super(node)
-                SignatureVisitor.INSTANCEOF -> Invariant(node)
+            val variance = when (wildcard) {
+                SignatureVisitor.EXTENDS -> TypeArgument.Variance.EXTENDS
+                SignatureVisitor.SUPER -> TypeArgument.Variance.SUPER
+                SignatureVisitor.INSTANCEOF -> TypeArgument.Variance.INVARIANT
                 else -> error("Unknown wildcard")
             }
-            addArgument(arg)
+
+
+            addArgument(TypeArgument.Bounded(variance, node))
         }
     }
 
-    override fun visitInnerClassType(name: String?) {
-        innerName = name
-        super.visitInnerClassType(name)
+    override fun visitInnerClassType(name: String) {
+        beginInnerType()
+        innerNames += name
     }
 
     override fun visitEnd() {
-        out(TypeSignatureNode.ClassType(classTypeName!!, classArgs, innerName, innerArgs))
-        super.visitEnd()
+        beginInnerType()
+        out(TypeSignatureNode.ClassType(classTypeName!!, classArgs, innerNames zip allInnerArgs))
+    }
+
+    private fun beginInnerType() {
+        if (!innerNames.isEmpty()) {
+            allInnerArgs += listOf(innerArgs)
+            innerArgs = emptyList()
+        }
     }
 }
 
 private class TypeVariableRemappingContext(val renameVector: Map<String, String>) {
     fun TypeArgument.remapTypeVariables(): TypeArgument? {
         return when (this) {
-            is TypeArgument.TypeArgumentWithVariance -> {
-                return node.remapTypeVariables()?.let { copy(it) }
-            }
+            is TypeArgument.Bounded -> node.remapTypeVariables()?.let { copy(node = it) }
             else -> null
         }
     }
@@ -310,9 +270,11 @@ private class TypeVariableRemappingContext(val renameVector: Map<String, String>
             }
             is TypeSignatureNode.ClassType -> {
                 val newClassArgs = classArgs.remapArguments()
-                val newInnerArgs = innerArgs.remapArguments()
+                val (innerNames, innerArgs) = inners.unzip()
+
+                val newInnerArgs = innerArgs.map { it.remapArguments() }
                 if (newClassArgs != classArgs || newInnerArgs != innerArgs) {
-                    return copy(classArgs = newClassArgs, innerArgs = newInnerArgs)
+                    return copy(classArgs = newClassArgs, inners = innerNames zip newInnerArgs)
                 }
                 return null
             }
@@ -323,16 +285,16 @@ private class TypeVariableRemappingContext(val renameVector: Map<String, String>
         }
     }
 
-    fun List<TypeSignatureNode>?.remapFully() = this?.map { it.remapOrOld() }
-    fun List<TypeArgument>?.remapArguments() = this?.map { it.remapTypeVariables() ?: it }
+    fun List<TypeSignatureNode>.remapFully() = this.map { it.remapOrOld() }
+    fun List<TypeArgument>.remapArguments() = this.map { it.remapTypeVariables() ?: it }
     fun <T : TypeSignatureNode?> T.remapOrOld(): T = (this?.remapTypeVariables() ?: this) as T
 }
 
 fun MethodSignatureNode.sanitizeTypeVariables(): Pair<MethodSignatureNode, Map<String, String>> {
-    if (typeVariables == null || typeVariables!!.isEmpty()) return this to emptyMap()
+    if (typeVariables.isEmpty()) return this to emptyMap()
 
     val renameVector = mutableMapOf<String, String>()
-    typeVariables?.forEachIndexed { index, typeVariable ->
+    typeVariables.forEachIndexed { index, typeVariable ->
         val newName = "TP$index"
         renameVector[typeVariable.name] = newName
     }
@@ -350,7 +312,7 @@ fun MethodSignatureNode.sanitizeTypeVariables(): Pair<MethodSignatureNode, Map<S
 
 fun MethodSignatureNode.renameTypeVariables(renameVector: Map<String, String>) {
     with(TypeVariableRemappingContext(renameVector)) {
-        typeVariables = typeVariables?.map { oldVariable ->
+        typeVariables = typeVariables.map { oldVariable ->
             TypeVariable(renameVector[oldVariable.name]!!).also {
                 it.classBound = oldVariable.classBound.remapOrOld()
                 it.interfaceBounds = oldVariable.interfaceBounds.remapFully()
