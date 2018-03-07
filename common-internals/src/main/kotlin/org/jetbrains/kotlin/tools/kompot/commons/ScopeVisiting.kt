@@ -7,7 +7,7 @@ import org.objectweb.asm.tree.VarInsnNode
 
 fun traceUpToVersionConst(insnNode: AbstractInsnNode): String? = traceUpToVersionConstNode(insnNode)?.cst as? String
 
-fun traceUpToVersionConstNode(insnNode: AbstractInsnNode): LdcInsnNode? {
+tailrec fun traceUpToVersionConstNode(insnNode: AbstractInsnNode): LdcInsnNode? {
     val prevNode = insnNode.previous
     when {
         prevNode is LdcInsnNode -> return prevNode

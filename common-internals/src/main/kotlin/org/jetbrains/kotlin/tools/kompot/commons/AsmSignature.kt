@@ -36,24 +36,25 @@ abstract class NodeWithTypeVariables : SignatureVisitor(Opcodes.ASM6) {
 
 class ClassSignatureNode : NodeWithTypeVariables() {
 
-    var superClass: TypeSignatureNode? = null
-    var interfaces: List<TypeSignatureNode>? = null
+    var superClass: TypeSignatureNode.ClassType? = null
+    var interfaces: List<TypeSignatureNode.ClassType> = emptyList()
 
     override fun visitSuperclass(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            superClass = it
+            superClass = it as TypeSignatureNode.ClassType
         }
     }
 
     override fun visitInterface(): SignatureVisitor {
         return TypeSignatureNodeBuilder {
-            interfaces = (interfaces ?: emptyList()) + it
+            interfaces += it as TypeSignatureNode.ClassType
         }
     }
 
     override fun accept(sv: SignatureVisitor) {
         super.accept(sv)
-        //TODO
+        superClass?.accept(sv.visitSuperclass())
+        interfaces.forEach { it.accept(visitInterface()) }
     }
 }
 

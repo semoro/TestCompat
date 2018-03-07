@@ -16,9 +16,7 @@ class StripPostProcessor(
     val predicate: (Version?) -> Boolean
 ) {
 
-
-    private inner class Visitor(val sub: ClassVisitor, val classNode: ClassNode) :
-        ClassVisitor(Opcodes.ASM5, classNode) {
+    private inner class Visitor(val sub: ClassVisitor) : ClassNode(Opcodes.ASM5) {
 
         private var skipClass = false
 
@@ -48,7 +46,7 @@ class StripPostProcessor(
                 override fun visitAnnotation(desc: String?, visible: Boolean): AnnotationVisitor? {
                     return readVersionAnnotation(versionLoader, desc, super.visitAnnotation(desc, visible)) { version ->
                         if (!predicate(version)) {
-                            classNode.methods.remove(mn)
+                            methods.remove(mn)
                             mv = null // Disconnect code visitor, optimisation
                         }
                     }
@@ -59,7 +57,7 @@ class StripPostProcessor(
         override fun visitEnd() {
             super.visitEnd()
             if (!skipClass) {
-                classNode.accept(sub)
+                accept(sub)
             }
         }
 
@@ -68,7 +66,6 @@ class StripPostProcessor(
             var eraseAfterNextJump = false
             var eraseBeforeLabel: Label? = null
             var erasedSomething = false
-            lateinit var currentLabel: Label
 
             override fun visitMethodInsn(opcode: Int, owner: String?, name: String?, desc: String?, itf: Boolean) {
                 if (owner == scopeMarkersContainerInternalName && mv != null) {
@@ -110,12 +107,11 @@ class StripPostProcessor(
                     .forEach { methodNode.instructions.remove(it) }
             }
 
-            override fun visitLabel(label: Label?) {
+            override fun visitLabel(label: Label) {
                 if (label == eraseBeforeLabel) {
                     mv = methodNode
                     eraseBeforeLabel = null
                 }
-                label?.let { currentLabel = it }
                 super.visitLabel(label)
             }
 
@@ -140,6 +136,6 @@ class StripPostProcessor(
     }
 
     fun createVisitor(sub: ClassVisitor): ClassVisitor {
-        return Visitor(sub, ClassNode())
+        return Visitor(sub)
     }
 }
