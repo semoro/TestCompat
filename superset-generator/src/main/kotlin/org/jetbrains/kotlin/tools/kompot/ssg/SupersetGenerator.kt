@@ -30,11 +30,32 @@ class SupersetGenerator(
 
     var mergeTime = 0L
 
+    private val gcm = GroupedClassMerger(SignatureLoaderImpl())
+
     fun appendClassNode(node: SSGClass) {
         mergeTime += measureTimeMillis {
-            classesByFqName.merge(node.fqName, listOf(node)) { all, new ->
-                all + new.filter { newClass ->
-                    all.none { merger.mergeClasses(it, newClass) }
+            classesByFqName.merge(node.fqName, listOf(node)) { all, new -> all + new }
+        }
+    }
+
+    val mergedClasses = mutableMapOf<String, List<SSGClass>>()
+
+    fun merge() {
+        mergeTime += measureTimeMillis {
+            classesByFqName.values.forEach {
+                gcm.group(it)
+            }
+            val r = gcm.prepareRewrite()
+            gcm.rewriteAll(r)
+            gcm.lookup.forEach { (key, grouped) ->
+                grouped.forEach {
+                    for (clz in it.classes) {
+                        mergedClasses.merge(it.fqName, listOf(clz)) { all, new ->
+                            all + new.filter { newClass ->
+                                all.none { merger.mergeClasses(it, newClass) }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -47,7 +68,7 @@ class SupersetGenerator(
 
         val writeTime = measureTimeMillis {
             val writer = SSGClassWriter(configuration)
-            classesByFqName.values.forEach { classes ->
+            mergedClasses.values.forEach { classes ->
                 val clazz = classes.singleOrNull() ?: run {
                     logger.warn("Multiple classes with same name:\n ${classes.joinToString { it.debugText() }}")
                     classes.first()

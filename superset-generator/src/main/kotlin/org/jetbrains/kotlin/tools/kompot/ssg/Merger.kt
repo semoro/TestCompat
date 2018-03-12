@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.fieldModalityMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.genericsMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.methodKindMismatch
 import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.ownerClassMismatch
+import org.jetbrains.kotlin.tools.kompot.ssg.MergeFailures.superTypeMismatch
 import org.objectweb.asm.signature.SignatureReader
 import org.objectweb.asm.signature.SignatureWriter
 import org.slf4j.Logger
@@ -260,11 +261,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             appendField(a, it, b)
         }
 
-        a.interfaces =
-                (a.interfaces.orEmpty().toList() + b.interfaces.orEmpty().toList())
-                    .distinct()
-                    .toTypedArray()
-                    .takeIf { it.any() }
+        a.interfaces = (a.interfaces + b.interfaces).distinct()
 
         mergeAnnotations(a, b)
 
@@ -324,7 +321,7 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
                 reportMergeFailure(ownerClassMismatch, "${a.ownerInfo} != ${b.ownerInfo}")
             }
             if (a.superType != b.superType) {
-                return false
+                reportMergeFailure(superTypeMismatch, "${a.superType} != ${b.superType}")
             }
             if (a.signature != b.signature) {
                 reportMergeFailure(genericsMismatch, "${a.signature} != ${b.signature}")

@@ -136,8 +136,7 @@ class SSGClassReadVisitor(private val rootVersion: Version, private val loadPara
     override fun visitInnerClass(name: String, outerName: String?, innerName: String?, access: Int) {
         super.visitInnerClass(name, outerName, innerName, access)
 
-        val innerClassesBySignature = result::innerClassesBySignature.getOrInit { mutableMapOf() }
-        innerClassesBySignature[name] = SSGInnerClassRef(access, name, outerName, innerName)
+        result.innerClassesBySignature += name to SSGInnerClassRef(access, name, outerName, innerName)
     }
 
 

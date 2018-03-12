@@ -12,12 +12,12 @@ import com.jetbrains.plugin.structure.intellij.classes.locator.CompileServerExte
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesFinder
 import com.jetbrains.plugin.structure.intellij.classes.plugin.IdePluginClassesLocations
 import com.jetbrains.plugin.structure.intellij.plugin.IdePlugin
-import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.tools.kompot.api.annotations.Visibility
 import org.jetbrains.kotlin.tools.kompot.ssg.Configuration
 import org.jetbrains.kotlin.tools.kompot.ssg.SSGClassReadVisitor
 import org.jetbrains.kotlin.tools.kompot.ssg.SupersetGenerator
 import org.jetbrains.kotlin.tools.kompot.ssg.visibility
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -47,20 +47,22 @@ fun main(args: Array<String>) {
     val versionHandler = IdeMergedVersionHandler()
     val loader = IdeMergedVersionLoader()
 
+
     val provider = SupersetGeneratorProvider {
         SupersetGenerator(
-            Logging.getLogger("IdeMerger"),
+            LoggerFactory.getLogger("IdeMerger"),
             versionHandler,
             loader,
             configuration
         )
     }
-
     for (idePath in idePaths) {
         appendIde(provider, idePath)
     }
 
     val outputDirFile = outputPath.toFile()
+
+    provider.all.forEach { (_, gen) -> gen.merge() }
 
     provider.all.forEach { (file, superset) ->
         info("Writing $file")

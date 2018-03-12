@@ -129,7 +129,14 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
 
     fun write(node: SSGClass, classWriter: ClassVisitor) {
 
-        classWriter.visit(Opcodes.V1_8, node.access, node.fqName, node.signature, node.superType, node.interfaces)
+        classWriter.visit(
+            Opcodes.V1_8,
+            node.access,
+            node.fqName,
+            node.signature,
+            node.superType,
+            node.interfaces.toTypedArray().takeIf { it.any() }
+        )
 
         if (node.isKotlin) {
             kotlinClasses++
@@ -137,7 +144,7 @@ class SSGClassWriter(val configuration: Configuration, val withBodyStubs: Boolea
 
         classWriter.writeOuterClassInfo(node.ownerInfo)
         node.writeAnnotations(classWriter::visitAnnotation)
-        node.innerClassesBySignature?.values?.forEach { ref ->
+        node.innerClassesBySignature.values.forEach { ref ->
             classWriter.visitInnerClass(ref.name, ref.outerName, ref.innerName, ref.access)
         }
 

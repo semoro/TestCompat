@@ -5,14 +5,14 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.VersionHandler
 import org.jetbrains.kotlin.tools.kompot.api.tool.VersionLoader
 
 
-class SimpleTestVersion(val s: Set<String>) : Version {
+data class SimpleTestVersion(val s: Set<String>) : Version {
     object Default : Version {
         override fun asLiteralValue(): String? {
             return null
         }
 
         override fun plus(other: Version): Version {
-            return other
+            return this
         }
 
         override fun contains(other: Version): Boolean {

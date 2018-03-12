@@ -6,19 +6,33 @@ import org.jetbrains.kotlin.tools.kompot.api.tool.Version
 import org.jetbrains.kotlin.tools.kompot.commons.getOrInit
 import org.objectweb.asm.tree.AnnotationNode
 
+//
+//class SSGGraph {
+//    val classes: List<SSGClass> = emptyList()
+//    val groupedClasses: List<GroupedClass>
+//        get() =
+//            classes.groupBy { it.fqName }.map { (fqName, classes) ->
+//                GroupedClass(fqName, classes)
+//            }
+//
+//
+//}
+
 class SSGClass(
     override var access: Int,
-    var fqName: String,
-    var signature: String?,
-    var superType: String?,
-    var interfaces: Array<String>?,
+    override var fqName: String,
+    override var signature: String?,
+    override var superType: String?,
+    interfaces: Array<String>?,
     override var version: Version
 ) : SSGNode<SSGClass>,
-    SSGVersionContainer,
+    SSGClassFacade,
     SSGAlternativeVisibilityContainer,
     SSGAlternativeModalityContainer,
     SSGAccess,
     SSGAnnotated {
+
+    override var interfaces: List<String> = interfaces?.toList() ?: emptyList()
 
     override var annotations: List<AnnotationNode>? = null
 
@@ -75,7 +89,7 @@ interface SSGMethodOrGroup {
     val methods: List<SSGMethod>
 }
 
-class SSGMethodGroup(override val methods: List<SSGMethod> = listOf()): SSGNode<SSGMethodGroup>, SSGMethodOrGroup {
+class SSGMethodGroup(override val methods: List<SSGMethod> = listOf()) : SSGNode<SSGMethodGroup>, SSGMethodOrGroup {
     override fun fqd(): String {
         return methods.first().fqd()
     }
@@ -129,7 +143,7 @@ class SSGParameterInfo(
 interface SSGNode<T : SSGNode<T>>
 
 interface SSGVersionContainer {
-    var version: Version
+    val version: Version
 }
 
 interface SSGAlternativeVisibilityContainer : SSGAccess, SSGVersionContainer {
@@ -156,6 +170,16 @@ interface SSGAnnotated {
     fun addAnnotation(node: AnnotationNode) {
         annotations = ::annotations.getOrInit { listOf() } + node
     }
+}
+
+interface SSGSignature {
+    val signature: String?
+}
+
+interface SSGClassFacade: SSGSignature, SSGVersionContainer {
+    val superType: String?
+    val fqName: String
+    val interfaces: List<String>
 }
 
 interface SSGNullabilityContainer {

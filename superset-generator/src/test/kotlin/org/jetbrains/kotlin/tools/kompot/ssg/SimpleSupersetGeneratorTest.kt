@@ -43,6 +43,7 @@ class SimpleSupersetGeneratorTest {
                 SimpleTestVersion(setOf("2"))
             )
             tmpDir.create()
+            gen.merge()
             gen.doOutput(tmpDir.root)
         }
 
@@ -104,7 +105,8 @@ class SimpleSupersetGeneratorTest {
 
     @Test
     fun testSuperclassMismatch() {
-        verifyOut("p/SuperclassMismatch.class")
+        verifyOut("p/SuperclassMismatchV0.class")
+        verifyOut("p/SuperclassMismatchV1.class")
     }
 
     @Test

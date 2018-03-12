@@ -286,7 +286,7 @@ private class TypeVariableRemappingContext(val renameVector: Map<String, String>
         }
     }
 
-    fun List<TypeSignatureNode>.remapFully() = this.map { it.remapOrOld() }
+    fun <T: TypeSignatureNode> List<T>.remapFully() = this.map { it.remapOrOld() }
     fun List<TypeArgument>.remapArguments() = this.map { it.remapTypeVariables() ?: it }
     fun <T : TypeSignatureNode?> T.remapOrOld(): T = (this?.remapTypeVariables() ?: this) as T
 }
