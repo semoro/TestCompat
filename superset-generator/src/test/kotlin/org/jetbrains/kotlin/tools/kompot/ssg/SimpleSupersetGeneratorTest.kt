@@ -110,6 +110,20 @@ class SimpleSupersetGeneratorTest {
     }
 
     @Test
+    fun testGenericsMismatch() {
+        verifyOut("p/GenericsMismatchV0.class")
+        verifyOut("p/GenericsMismatchV1.class")
+    }
+
+    @Test
+    fun testGenericsMismatchOnInnerRef() {
+        verifyOut("p/GenericsMismatchOnInnerRefV0.class")
+        verifyOut("p/GenericsMismatchOnInnerRef\$MyInnerV1.class")
+        verifyOut("p/GenericsMismatchOnInnerRefV1.class")
+        verifyOut("p/GenericsMismatchOnInnerRef\$MyInnerV2.class")
+    }
+
+    @Test
     fun testInterfacesMismatch() {
         verifyOut("p/InterfacesMismatch.class")
     }

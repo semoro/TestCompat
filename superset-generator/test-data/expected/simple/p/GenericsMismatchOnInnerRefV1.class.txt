@@ -1,0 +1,14 @@
+// class version 52.0 (52)
+// access flags 0x21
+// signature Ljava/lang/Object;Lp/data/GenericI<Lp/GenericsMismatchOnInnerRef$MyInnerV2;>;
+// declaration: p/GenericsMismatchOnInnerRefV1 implements p.data.GenericI<p.GenericsMismatchOnInnerRef$MyInnerV2>
+public class p/GenericsMismatchOnInnerRefV1 implements p/data/GenericI  {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
+  // access flags 0x9
+  public static INNERCLASS p/GenericsMismatchOnInnerRef$MyInnerV2 p/GenericsMismatchOnInnerRefV1 MyInnerV2
+
+  // access flags 0x1
+  public <init>()V
+}

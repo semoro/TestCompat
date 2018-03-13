@@ -61,7 +61,7 @@ class Rewriter(
     }
 
     fun TypeArgument.rewrite(version: Version): TypeArgument {
-        return when(this) {
+        return when (this) {
             is TypeArgument.Unbounded -> this
             is TypeArgument.Bounded -> this.copy(node = node.rewrite(version))
         }
@@ -74,8 +74,8 @@ class Rewriter(
                 val classTypeName = classTypeName.rewrite(version)
 
 
-                val inners = inners.map {
-                    it.first.rewrite(version) to it.second.map { it.rewrite(version) }
+                val inners = inners.map { (name, args) ->
+                    name to args.map { it.rewrite(version) }
                 }
                 TypeSignatureNode.ClassType(classTypeName, classArgs, inners) as T
             }
@@ -88,11 +88,11 @@ class Rewriter(
 
     fun ClassSignatureNode.rewrite(version: Version): ClassSignatureNode {
 
-        return ClassSignatureNode().also {
-            it.interfaces = interfaces.map { it.rewrite(version) }
-            it.superClass = superClass?.rewrite(version)
-            it.typeVariables = typeVariables.map { it.rewrite(version) }
-        }
+        return ClassSignatureNode(
+            interfaces = interfaces.map { it.rewrite(version) },
+            superClass = superClass?.rewrite(version),
+            typeVariables = typeVariables.map { it.rewrite(version) }
+        )
     }
 
     fun SSGSignature.rewrite(version: Version): String? {
@@ -103,14 +103,15 @@ class Rewriter(
 
     fun GroupedClass.rewrite(): List<SSGClass> {
         return classes.onEach { clz ->
-            clz.signature = (this as SSGSignature).rewrite(version)
+            clz.signature = (this as SSGSignature).rewrite(clz.version)
             clz.fqName = clz.fqName.rewrite(clz.version)
             clz.superType = clz.superType.rewrite(clz.version)
             clz.interfaces.forEach { it.rewrite(clz.version) }
             clz.ownerInfo?.run { owner = owner.rewrite(clz.version) }
 
             clz.innerClassesBySignature.values.forEach {
-                it.name = it.name.rewrite(version)
+                it.name = it.name.rewrite(clz.version)
+                it.outerName = it.outerName.rewrite(clz.version)
             }
 
             val methods = clz.methodsBySignature.values.map { it.rewrite(clz.version) }

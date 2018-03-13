@@ -67,6 +67,13 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             }
         }
 
+    private fun String.loadSignature(): MethodSignatureNode {
+        val reader = SignatureReader(this)
+        val builder = MethodSignatureNodeBuilder()
+        reader.accept(builder)
+        return builder.node
+    }
+
     private fun mergeMethodSignaturesWithErasure(
         targetMethod: SSGMethod,
         source: String?,
@@ -80,14 +87,9 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
             return
         }
 
-        val tr = SignatureReader(target)
-        val sr = SignatureReader(source)
 
-        val sourceSignature = MethodSignatureNode()
-        sr.accept(sourceSignature)
-
-        val targetSignatureNode = MethodSignatureNode()
-        tr.accept(targetSignatureNode)
+        val sourceSignature = source.loadSignature()
+        val targetSignatureNode = target.loadSignature()
 
         val (sanitizedTargetNode, targetRenameVector) = targetSignatureNode.sanitizeTypeVariables()
         val (sanitizedSourceNode, sourceRenameVector) = sourceSignature.sanitizeTypeVariables()
@@ -98,38 +100,38 @@ class SSGMerger(val logger: Logger, val versionHandler: VersionHandler) {
 
         if (!allowDeepMerge) reportMergeFailure(genericsMismatch, "non deep check: $target != $source")
 
-        sanitizedTargetNode.returnType = mergeTypeSignatureNodes(
-            sanitizedTargetNode.returnType!!,
-            sanitizedSourceNode.returnType!!
-        ) ?: reportMergeFailure(
-            genericsMismatch,
-            "Failed to merge return type: ${sanitizedTargetNode.returnType} U ${sanitizedSourceNode.returnType}"
+
+        val resultNode = sanitizedTargetNode.copy(
+            returnType = mergeTypeSignatureNodes(
+                sanitizedTargetNode.returnType!!,
+                sanitizedSourceNode.returnType!!
+            ) ?: reportMergeFailure(
+                genericsMismatch,
+                "Failed to merge return type: ${sanitizedTargetNode.returnType} U ${sanitizedSourceNode.returnType}"
+            ),
+            parameterTypes =
+            sanitizedTargetNode.parameterTypes.zip(sanitizedSourceNode.parameterTypes).map { (a, b) ->
+                mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
+                    genericsMismatch,
+                    "Failed to merge parameter type: $a U $b"
+                )
+            },
+            exceptionTypes =
+            sanitizedTargetNode.exceptionTypes.zip(sanitizedSourceNode.exceptionTypes).map { (a, b) ->
+                mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
+                    genericsMismatch,
+                    "Failed to merge exception type: $a U $b"
+                )
+            }
         )
 
-        sanitizedTargetNode.parameterTypes =
-                sanitizedTargetNode.parameterTypes?.zip(sanitizedSourceNode.parameterTypes!!)
-                    ?.map { (a, b) ->
-                        mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
-                            genericsMismatch,
-                            "Failed to merge parameter type: $a U $b"
-                        )
-                    }
-
-        sanitizedTargetNode.exceptionTypes =
-                sanitizedTargetNode.exceptionTypes?.zip(sanitizedSourceNode.exceptionTypes!!)
-                    ?.map { (a, b) ->
-                        mergeTypeSignatureNodes(a, b) ?: reportMergeFailure(
-                            genericsMismatch,
-                            "Failed to merge exception type: $a U $b"
-                        )
-                    }
 
         val compositeRenameVector = sourceRenameVector + targetRenameVector
 
-        sanitizedTargetNode.renameTypeVariables(compositeRenameVector.entries.associate { it.value to it.key })
+        val renamedNode = resultNode.renameTypeVariables(compositeRenameVector.entries.associate { it.value to it.key })
 
         val signatureWriter = SignatureWriter()
-        sanitizedTargetNode.accept(signatureWriter)
+        renamedNode.accept(signatureWriter)
         targetMethod.signature = signatureWriter.toString()
     }
 

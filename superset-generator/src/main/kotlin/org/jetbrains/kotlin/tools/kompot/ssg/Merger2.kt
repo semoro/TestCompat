@@ -127,7 +127,11 @@ class GroupedClassMerger(val signatureLoader: SignatureLoader) : SignatureLoader
         return a.copy(classBound = classBound, interfaceBounds = interfaceBounds)
     }
 
-    fun merge(a: ClassSignatureNode, b: ClassSignatureNode, ctx: GroupingContext): ClassSignatureNode? {
+    fun merge(
+        a: ClassSignatureNode,
+        b: ClassSignatureNode,
+        ctx: GroupingContext
+    ): ClassSignatureNode? {
 
         val context = TypeSignatureMergingContext(ctx, false, false)
 
@@ -157,11 +161,7 @@ class GroupedClassMerger(val signatureLoader: SignatureLoader) : SignatureLoader
             }
         }
 
-        return ClassSignatureNode().apply {
-            this.interfaces = allInterfaces
-            this.superClass = superType
-            this.typeVariables = typeVariables
-        }
+        return ClassSignatureNode(typeVariables, superType, allInterfaces)
     }
 
     fun merge(a: GroupedClass, b: SSGClass, ctx: GroupingContext): GroupedClass? {

@@ -1,0 +1,12 @@
+// class version 52.0 (52)
+// access flags 0x21
+public class p/GenericsMismatchOnInnerRef$MyInnerV2 {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="2")
+  // access flags 0x9
+  public static INNERCLASS p/GenericsMismatchOnInnerRef$MyInnerV2 p/GenericsMismatchOnInnerRefV1 MyInnerV2
+
+  // access flags 0x1
+  public <init>()V
+}

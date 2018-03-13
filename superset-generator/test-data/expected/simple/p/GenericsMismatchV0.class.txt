@@ -1,0 +1,12 @@
+// class version 52.0 (52)
+// access flags 0x21
+// signature Ljava/lang/Object;Lp/data/GenericI<Lp/data/I1;>;
+// declaration: p/GenericsMismatchV0 implements p.data.GenericI<p.data.I1>
+public class p/GenericsMismatchV0 implements p/data/GenericI  {
+
+
+  @Lorg/jetbrains/kotlin/tools/kompot/api/annotations/ExistsIn;(version="1")
+
+  // access flags 0x1
+  public <init>()V
+}
